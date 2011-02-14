@@ -1,10 +1,5 @@
 # AR Loader
 
-Copyright:: (c) Autotelik Media Ltd 2011
-Author ::   Tom Statter
-Date ::     Feb 2011
-License::   TBD - Free and Open Source - MIT ?
-
 ## Intro
 
 General Active Record Loader with current focus on support for Spree.
@@ -16,7 +11,7 @@ attribute or association name, and loader will attempt to
 find correct association and populate AR object with column data.
 
 Can handle human read-able forms, so for example, given an association on AR model called,
-product_properties, will map from columns headings such as 'product_properties',
+product_properties, will map from column headings such as 'product_properties',
 'Product Properties', 'product properties'  etc
 
 ## QUICK START
@@ -72,9 +67,9 @@ Include gem in your Rails project. Currently no support for AR usage outside a R
 
 ## Example Wrapper Tasks for Site Extension
 
-  require 'ar_loader'
+    require 'ar_loader'
 
-  namespace :mysite do
+    namespace :mysite do
 
     desc "Load Products for site"
     task :load, :needs => [:environment] do |t, args|
@@ -113,7 +108,7 @@ Include gem in your Rails project. Currently no support for AR usage outside a R
 
 ## Details
 
-##= Associations
+### Associations
 
 A single association column can contain multiple name/value sets in default form :
 
@@ -157,10 +152,11 @@ Example - Display  values : manufacturer:somebody else plc|standard:ISOBlah21
 
 ## License
 
-The MIT License
+Copyright:: (c) Autotelik Media Ltd 2011
+Author ::   Tom Statter
+Date ::     Feb 2011
 
-Copyright (c) 2009 Chris Trinh
-Copyright (c) 2010 Jan Schulz-Hofen, ROCKET RENTALS GmbH (http://www.rocket-rentals.de)
+The MIT License
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
