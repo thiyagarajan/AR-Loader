@@ -32,7 +32,8 @@ Include gem in your Rails project. Currently no support for AR usage outside a R
 
   The java jars e.g - 'poi-3.6.jar' - are included.
 
-- Semi-Smart name lookup
+- Semi-Smart Name Lookup
+
   Includes helper classes that find and store details of all possible associations on an AR class
   and given a user supplied name attempt to find the requested association.
 
@@ -40,30 +41,30 @@ Include gem in your Rails project. Currently no support for AR usage outside a R
   an approximation of the actual associations, so given 'Product Properties' heading,
   finds real association 'product_properties' to send or call on the AR object
 
-3) Associations
+- Associations
 
   Enables multiple associations to be described in single entry (column)
 
-4) Spree Rake Tasks
+- Spree Rake Tasks
 
   Rake tasks provided for Spree loading - currently supports Product with associations,
   and Image loading.
 
-  Product loading from Excel specifically requires JRuby
+  **Product loading from Excel specifically requires JRuby**. Examples:
 
-  => jruby -S rake excel_load input=vendor\extensions\autotelik\fixtures\ExampleInfoWeb.xls
-  => jruby -S rake excel_load input=C:\MyProducts.xls verbose=true
+    jruby -S rake excel_load input=vendor\extensions\autotelik\fixtures\ExampleInfoWeb.xls
+    jruby -S rake excel_load input=C:\MyProducts.xls verbose=true
 
   Images can be attached to any class, specified by parameter klass=XXX.
   Default is to attach to a Product.
   Image loading does not specifically require JRuby
 
   Fairly seamless Image loading can be achieved by ensuring the SKU or product Name
-  feature in the image filename.
+  feature in the image filename. Examples :
 
-  => rake image_load input=vendor\extensions\autotelik\lib\fixtures\
-  => rake image_load input="C:\images\Paintings' dummy=true
-  => rake image_load input="C:\images\TaxonIcons" skip_if_no_assoc=true klass=Taxon
+    rake image_load input=vendor\extensions\autotelik\lib\fixtures\
+    rake image_load input="C:\images\Paintings' dummy=true
+    rake image_load input="C:\images\TaxonIcons" skip_if_no_assoc=true klass=Taxon
 
 ## Example Wrapper Tasks for Site Extension
 
