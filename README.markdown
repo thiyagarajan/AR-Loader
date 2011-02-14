@@ -4,13 +4,13 @@
 
 General Active Record Loader with current focus on support for Spree.
 
-Fully extendable via spreadsheet headings.
+Maps column headings to attributes and associations.
 
-Maps column headings to attributes and associations. Simply add new column to Excel with
+Fully extendable via spreadsheet headings - simply add new column to Excel with
 attribute or association name, and loader will attempt to
-find correct association and populate AR object with column data.
+find correct association and populate AR object with row data.
 
-Can handle human read-able forms, so for example, given an association on AR model called,
+Can handle human read-able forms of column names. For example, given an association on AR model called,
 product_properties, will map from column headings such as 'product_properties',
 'Product Properties', 'product properties'  etc
 
@@ -25,34 +25,38 @@ Include gem in your Rails project. Currently no support for AR usage outside a R
 
 ## Features
 
-- Direct Excel support
+- *Direct Excel support*
 
   Includes a wrapper around MS Excel via Apache POI, which
   enables Products to be loaded directly from Excel via JRuby. No need to save to CSV first.
 
   The java jars e.g - 'poi-3.6.jar' - are included.
 
-- Semi-Smart Name Lookup
+- *Semi-Smart Name Lookup*
 
-  Includes helper classes that find and store details of all possible associations on an AR class
-  and given a user supplied name attempt to find the requested association.
+  Includes helper classes that find and store details of all possible associations on an AR class.
+  Given a user supplied name, attempts to find the requested association.
 
   Example usage, load from a file or spreadsheet where the column names are only
   an approximation of the actual associations, so given 'Product Properties' heading,
   finds real association 'product_properties' to send or call on the AR object
 
-- Associations
+- *Associations*
 
-  Enables multiple associations to be described in single entry (column)
+  Can handle 'many' type associations and enables multiple association objects to
+  be added via single entry (column). See Details section.
 
-- Spree Rake Tasks
+- *Spree Rake Tasks*
 
   Rake tasks provided for Spree loading - currently supports Product with associations,
   and Image loading.
 
-  **Product loading from Excel specifically requires JRuby**. Examples:
+  **Product loading from Excel specifically requires JRuby**. 
+
+  Example command lines:
 
     jruby -S rake excel_load input=vendor\extensions\autotelik\fixtures\ExampleInfoWeb.xls
+
     jruby -S rake excel_load input=C:\MyProducts.xls verbose=true
 
   Images can be attached to any class, specified by parameter klass=XXX.
@@ -60,13 +64,15 @@ Include gem in your Rails project. Currently no support for AR usage outside a R
   Image loading does not specifically require JRuby
 
   Fairly seamless Image loading can be achieved by ensuring the SKU or product Name
-  feature in the image filename. Examples :
+  feature in the image filename. 
 
-    rake image_load input=vendor\extensions\autotelik\lib\fixtures\
-    rake image_load input="C:\images\Paintings' dummy=true
-    rake image_load input="C:\images\TaxonIcons" skip_if_no_assoc=true klass=Taxon
+  Example cmd lines :
 
-## Example Wrapper Tasks for Site Extension
+      rake image_load input=vendor\extensions\autotelik\lib\fixtures
+      rake image_load input="C:\images\Paintings' dummy=true
+      rake image_load input="C:\images\TaxonIcons" skip_if_no_assoc=true klass=Taxon
+
+## Example Wrapper Tasks for Spree Site Extension
 
     require 'ar_loader'
 
@@ -113,16 +119,16 @@ Include gem in your Rails project. Currently no support for AR usage outside a R
 
 A single association column can contain multiple name/value sets in default form :
 
-  Name1:value1, value2|Name2:value1, value2, value3|Name3:value1, value2 etc
+    Name1:value1, value2|Name2:value1, value2, value3|Name3:value1, value2 etc
 
 So for example a Column for an 'Option Types' association on a Product,
  could contain 2 options with a number of values each :
 
 'Option Types'
-  size:small,medium,large|colour:red,white
-  size:small|colour:blue,red,white
+    size:small,medium,large|colour:red,white
+    size:small|colour:blue,red,white
 
-##= Properties
+### Properties
 
 The properties to associate with this product.
 Properties are for small snippets of text, shared across many products,
@@ -132,22 +138,23 @@ An optional display value can be supplied to supplement the displayed text.
 
 As for all associations can contain multiple name/value sets in default form :
 
-  Property:display_value|Property:display_value
+    Property:display_value|Property:display_value
 
 Example - No values :
-  manufacturer|standard
+    manufacturer|standard
 
 Example - Display  values :
-  manufacturer:somebody else plc|standard:ISOBlah21
+    manufacturer:somebody else plc|standard:ISOBlah21
 
 ## TODO
 
-  -Make more generic, so have smart switching to Ruby and directly support csv,
+  - Make more generic, so have smart switching to Ruby and directly support csv,
   when JRuby and/or Excel not available.
 
-  -Look to support Open Office.
+  - Look to support Open Office.
 
-  -Smart sorting of column processing order ....
+  - Smart sorting of column processing order ....
+
   Does not currently ensure mandatory columns (for valid?) processed first.
   Since Product needs saving before associations can be processed, user currently
   needs to ensure SKU, name, price columns are among first columns
@@ -155,7 +162,9 @@ Example - Display  values :
 ## License
 
 Copyright:: (c) Autotelik Media Ltd 2011
+
 Author ::   Tom Statter
+
 Date ::     Feb 2011
 
 The MIT License
