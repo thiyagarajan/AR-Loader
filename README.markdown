@@ -25,14 +25,14 @@ Include gem in your Rails project. Currently no support for AR usage outside a R
 
 ## Features
 
-1) Direct Excel support
+- Direct Excel support
 
   Includes a wrapper around MS Excel via Apache POI, which
   enables Products to be loaded directly from Excel via JRuby. No need to save to CSV first.
 
   The java jars e.g - 'poi-3.6.jar' - are included.
 
-2) Semi-Smart name lookup
+- Semi-Smart name lookup
   Includes helper classes that find and store details of all possible associations on an AR class
   and given a user supplied name attempt to find the requested association.
 
@@ -112,14 +112,14 @@ Include gem in your Rails project. Currently no support for AR usage outside a R
 
 A single association column can contain multiple name/value sets in default form :
 
-Name1:value1, value2|Name2:value1, value2, value3|Name3:value1, value2 etc
+  Name1:value1, value2|Name2:value1, value2, value3|Name3:value1, value2 etc
 
 So for example a Column for an 'Option Types' association on a Product,
  could contain 2 options with a number of values each :
 
 'Option Types'
-size:small,medium,large|colour:red,white
-size:small|colour:blue,red,white
+  size:small,medium,large|colour:red,white
+  size:small|colour:blue,red,white
 
 ##= Properties
 
@@ -131,12 +131,13 @@ An optional display value can be supplied to supplement the displayed text.
 
 As for all associations can contain multiple name/value sets in default form :
 
-Property:display_value|Property:display_value
+  Property:display_value|Property:display_value
 
-Example - No values : manufacturer|standard
+Example - No values :
+  manufacturer|standard
 
-Example - Display  values : manufacturer:somebody else plc|standard:ISOBlah21
-
+Example - Display  values :
+  manufacturer:somebody else plc|standard:ISOBlah21
 
 ## TODO
 
