@@ -55,13 +55,17 @@ Include gem in your Rails project. Currently no support for AR usage outside a R
 
   Example command lines:
 
-    jruby -S rake excel_load input=vendor\extensions\autotelik\fixtures\ExampleInfoWeb.xls
+      jruby -S rake excel_load input=vendor\extensions\autotelik\fixtures\ExampleInfoWeb.xls
 
-    jruby -S rake excel_load input=C:\MyProducts.xls verbose=true
+      jruby -S rake excel_load input=C:\MyProducts.xls verbose=true
 
   Images can be attached to any class, specified by parameter klass=XXX.
-  Default is to attach to a Product.
-  Image loading does not specifically require JRuby
+
+  The default is to attempt to attach to a Product.
+
+  Lookup is performed either via the SKU being prepended to the image name or by the image name being equal to the **name attribute** of the klass in question.
+
+  Image loading **does not** specifically require JRuby
 
   Fairly seamless Image loading can be achieved by ensuring the SKU or product Name
   feature in the image filename. 
