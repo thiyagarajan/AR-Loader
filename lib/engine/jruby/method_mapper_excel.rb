@@ -1,7 +1,7 @@
 # Copyright:: (c) Autotelik Media Ltd 2011
 # Author ::   Tom Statter
 # Date ::     Jan 2011
-# License::   MIT ?
+# License::   MIT
 #
 # JAVA SPECIFIC LOAD
 require 'java'
@@ -11,11 +11,13 @@ require 'method_mapper'
 
 class MethodMapperExcel < MethodMapper
     
-  attr_accessor :excel, :sheet, :header_row, :headers
+  attr_accessor :excel, :sheet
 
   # Read the headers from a spreadsheet and map to ActiveRecord members/associations
 
   def initialize( file_name, klass, sheet_number = 0 )
+    super
+    
     @excel = JExcelFile.new
 
     @excel.open(file_name)

@@ -1,12 +1,15 @@
-# Copyright:: (c) Autotelik Media Ltd 2010
+# Copyright:: (c) Autotelik Media Ltd 2011
 # Author ::   Tom Statter
 # Date ::     Aug 2010
-# License::   MIT ?
+# License::   MIT
 #
-# Details::   This is a storage class for the results of MethodMapper.
-#             Enables clients to iterate over MethodMapper results set and assign values
-#             to an AR object, without knowing anything about that receiving object.
+# Details::   This class provides information and access to the individual methods
+#             on an AR model. Populated by, and coupled with MethodMapper,
+#             which does the model interrogation work.
+#             Enables 'loaders' to iterate over the MethodMapper results set,
+#             and assign values to AR object, without knowing anything about that receiving object.
 #
+# =>
 require 'to_b'
 
 class MethodDetail

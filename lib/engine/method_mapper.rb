@@ -1,19 +1,25 @@
-# Copyright:: (c) Autotelik Media Ltd 2010
+# Copyright:: (c) Autotelik Media Ltd 2011
 # Author ::   Tom Statter
 # Date ::     Aug 2010
-# License::   MIT ?
+# License::   MIT
 #
-# Details::   A helper class that stores details of all possible associations on an AR class
-#             and given a user supplied name attempts to find the association.
+# Details::   A base class that stores details of all possible associations on AR classes and,
+#             given user supplied class and name, attempts to find correct attribute/association.
 #
-#             Example usage, load from a file or spreadsheet where the column names are only
-#             an approximation of the actual associations, so given 'Product Properties' heading,
-#             finds real association 'product_properties' to send or call on the AR object
+#             Derived classes define where the user supplied list of names originates from.
+#
+#             Example usage, load from a spreadsheet where the column names are only
+#             an approximation of the actual associations. Given a column heading of
+#             'Product Properties' on class Product,  find_method_detail() would search AR model,
+#             and return details of real has_many association 'product_properties'.
+#
+#             This real association can then be used to send spreadsheet row data to the AR object.
 #             
 require 'method_detail'
 
 class MethodMapper
 
+  attr_accessor :header_row, :headers
   attr_accessor :methods
   
   @@has_many     = Hash.new
@@ -23,6 +29,7 @@ class MethodMapper
 
   def initialize
     @methods = []
+    @headers = []
   end
 
   # Build complete picture of the methods whose names listed in method_list

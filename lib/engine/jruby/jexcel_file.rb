@@ -1,13 +1,15 @@
-# Copyright:: (c) Autotelik Media Ltd 2010
+# Copyright:: (c) Autotelik Media Ltd 2011
 # Author ::   Tom Statter
 # Date ::     Aug 2010
-# License::   MIT ?
+# License::   MIT
 #
 # An Excel file helper. Create and populate XSL files
 #
 # The maximum number of columns and rows in an Excel file is fixed at 256 Columns and 65536 Rows
 # 
 # POI jar location needs to be added to class path.
+#
+#  TODO -  Check out http://poi.apache.org/poi-ruby.html
 #
 class Object
   def add_to_classpath(path)

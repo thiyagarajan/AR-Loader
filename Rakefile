@@ -9,7 +9,7 @@ require 'rake/testtask'
 # Author ::   Tom Statter
 # Date ::     Aug 2010
 #
-# License::   Free, OpenSource... MIT ?
+# License::   MIT - Free, OpenSource
 #
 # Details::   Gem::Specification for Active Record Loader gem.
 #
@@ -27,8 +27,8 @@ spec = Gem::Specification.new do |s|
   s.version = ArLoader.gem_version
   s.has_rdoc = true
   s.extra_rdoc_files = ['README.markdown', 'LICENSE']
-  s.summary = 'A loader for Active Record models, reading directly from Excel'
-  s.description = s.summary
+  s.summary = 'File based loader for Active Record models'
+  s.description = 'A file based loader for Active Record models, reading directly from Excel'
   s.author = 'thomas statter'
   s.email = 'gems@autotelik.co.uk'
   s.date = DateTime.now.strftime("%Y-%m-%d")

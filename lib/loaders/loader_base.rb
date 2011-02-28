@@ -1,7 +1,7 @@
-# Copyright:: (c) Autotelik Media Ltd 2010
+# Copyright:: (c) Autotelik Media Ltd 2011
 # Author ::   Tom Statter
 # Date ::     Aug 2010
-# License::   MIT ?
+# License::   MIT
 #
 class LoaderBase
 
