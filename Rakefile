@@ -26,7 +26,7 @@ spec = Gem::Specification.new do |s|
   s.name = ArLoader.gem_name
   s.version = ArLoader.gem_version
   s.has_rdoc = true
-  s.extra_rdoc_files = ['README', 'LICENSE']
+  s.extra_rdoc_files = ['README.markdown', 'LICENSE']
   s.summary = 'A loader for Active Record models, reading directly from Excel'
   s.description = s.summary
   s.author = 'thomas statter'
@@ -35,7 +35,7 @@ spec = Gem::Specification.new do |s|
   s.homepage = %q{http://www.autotelik.co.uk}
 
   # s.executables = ['your_executable_here']
-  s.files = %w(LICENSE README Rakefile) + Dir.glob("{lib,spec,tasks}/**/*")
+  s.files = %w(LICENSE README.markdown Rakefile) + Dir.glob("{lib,spec,tasks}/**/*")
   s.require_path = "lib"
   s.bindir = "bin"
 end
@@ -47,9 +47,9 @@ Rake::GemPackageTask.new(spec) do |p|
 end
 
 Rake::RDocTask.new do |rdoc|
-  files =['README', 'LICENSE', 'lib/**/*.rb']
+  files =['README.markdown', 'LICENSE', 'lib/**/*.rb']
   rdoc.rdoc_files.add(files)
-  rdoc.main = "README" # page to start on
+  rdoc.main = "README.markdown" # page to start on
   rdoc.title = "ARLoader Docs"
   rdoc.rdoc_dir = 'doc/rdoc' # rdoc output folder
   rdoc.options << '--line-numbers'

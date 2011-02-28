@@ -18,7 +18,7 @@ namespace :autotelik do
     require 'product_loader'
     require 'method_mapper_excel'
 
-    raise "USAGE: jruby -S rake excel_load input=excel_file.xls" unless args[:input] && File.exists?(args[:input])
+    raise "USAGE: jruby -S rake excel_load input=excel_file.xls" unless args[:input]
     raise "ERROR: Could not find file #{args[:input]}" unless File.exists?(args[:input])
 
     @method_mapper = MethodMapperExcel.new(args[:input], Product)
