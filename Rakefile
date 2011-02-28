@@ -9,7 +9,7 @@ require 'rake/testtask'
 # Author ::   Tom Statter
 # Date ::     Aug 2010
 #
-# License::   Free, OpenSource... MIT ?
+# License::   MIT - Free, OpenSource
 #
 # Details::   Gem::Specification for Active Record Loader gem.
 #
@@ -26,16 +26,16 @@ spec = Gem::Specification.new do |s|
   s.name = ArLoader.gem_name
   s.version = ArLoader.gem_version
   s.has_rdoc = true
-  s.extra_rdoc_files = ['README', 'LICENSE']
-  s.summary = 'A loader for Active Record models, reading directly from Excel'
-  s.description = s.summary
+  s.extra_rdoc_files = ['README.markdown', 'LICENSE']
+  s.summary = 'File based loader for Active Record models'
+  s.description = 'A file based loader for Active Record models, reading directly from Excel'
   s.author = 'thomas statter'
   s.email = 'gems@autotelik.co.uk'
   s.date = DateTime.now.strftime("%Y-%m-%d")
   s.homepage = %q{http://www.autotelik.co.uk}
 
   # s.executables = ['your_executable_here']
-  s.files = %w(LICENSE README Rakefile) + Dir.glob("{lib,spec,tasks}/**/*")
+  s.files = %w(LICENSE README.markdown Rakefile) + Dir.glob("{lib,spec,tasks}/**/*")
   s.require_path = "lib"
   s.bindir = "bin"
 end
@@ -47,9 +47,9 @@ Rake::GemPackageTask.new(spec) do |p|
 end
 
 Rake::RDocTask.new do |rdoc|
-  files =['README', 'LICENSE', 'lib/**/*.rb']
+  files =['README.markdown', 'LICENSE', 'lib/**/*.rb']
   rdoc.rdoc_files.add(files)
-  rdoc.main = "README" # page to start on
+  rdoc.main = "README.markdown" # page to start on
   rdoc.title = "ARLoader Docs"
   rdoc.rdoc_dir = 'doc/rdoc' # rdoc output folder
   rdoc.options << '--line-numbers'
