@@ -16,7 +16,7 @@ class MethodMapperExcel < MethodMapper
   # Read the headers from a spreadsheet and map to ActiveRecord members/associations
 
   def initialize( file_name, klass, sheet_number = 0 )
-    super
+    super()
     
     @excel = JExcelFile.new
 

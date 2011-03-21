@@ -22,6 +22,8 @@ require 'rake/testtask'
 #
 require "lib/ar_loader"
 
+ArLoader::require_tasks
+
 spec = Gem::Specification.new do |s|
   s.name = ArLoader.gem_name
   s.version = ArLoader.gem_version

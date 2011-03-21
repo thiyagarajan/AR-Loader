@@ -1,3 +1,10 @@
+# Author ::   Tom Statter
+# Date ::     Mar 2011
+#
+# License::   The MIT License (Free and OpenSource)
+#
+# About::     Additional Rake tasks useful when testing seeding DB via ARLoader
+#
 namespace :autotelik do
 
   namespace :db  do
@@ -40,5 +47,19 @@ namespace :autotelik do
         raise "Task not supported by '#{config["adapter"]}'"
       end
     end
-  end
-end
+ 
+    desc "Clear database and optional directories such as assets, then run db:seed"
+    task :seed_again, :assets, :needs => [:environment] do |t, args|
+
+      Rake::Task['autotelik:db:purge'].invoke( true )   # i.e ENV['exclude_system_tables'] = true
+
+      if(args[:assets])
+        assets = "#{Rails.root}/public/assets"
+        FileUtils::rm_rf(assets) if(File.exists?(assets))
+      end
+
+      Rake::Task['db:seed'].invoke
+    end
+  
+  end # db
+end # autotelik

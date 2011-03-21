@@ -51,4 +51,3 @@ module ArLoader
 end
 
 ArLoader::require_libraries
-ArLoader::require_tasks

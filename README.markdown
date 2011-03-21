@@ -27,6 +27,10 @@ Currently not tested AR usage outside a Rails Project but to install the l;atest
 
     `gem install ar_loader`
 
+To pull the tasks in, add call in your Rakefile to  :
+
+    ArLoader::require_tasks
+
 ## Example Spreadsheet
 
   An example Spreadsheet with headers and comments, suitable for giving to Clients
@@ -68,7 +72,7 @@ Currently not tested AR usage outside a Rails Project but to install the l;atest
 
     rake excel_load input=C:\MyProducts.xls verbose=true'
 
-  **Seamless Image loading can be achieved by ensuring SKU or class Name features in Image filename.
+- *Seamless Image loading can be achieved by ensuring SKU or class Name features in Image filename.
 
   Lookup is performed either via the SKU being prepended to the image name, or by the image name being equal to the **name attribute** of the klass in question.
 
