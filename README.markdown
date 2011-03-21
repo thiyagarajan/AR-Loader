@@ -1,7 +1,5 @@
 # AR Loader
 
-## Intro
-
 General Active Record Loader with current focus on support for Spree.
 
 Maps column headings to attributes and associations.
@@ -14,9 +12,21 @@ Can handle human read-able forms of column names. For example, given an associat
 product_properties, will map from column headings such as 'product_properties',
 'Product Properties', 'product properties'  etc
 
-## QUICK START
+## Installation
 
-Include gem in your Rails project. Currently no support for AR usage outside a Rails Project.
+Add gem instruction to your Gemfile. To use the Excel loader, JRuby is required, so to use in a mixed setup
+of JRuby and deployed to other Rubies, use the following guard.
+`
+  if(RUBY_PLATFORM =~ /java/)
+      gem 'activerecord-jdbcmysql-adapter'
+  else
+      gem 'mysql'
+  end
+`
+Currently not tested AR usage outside a Rails Project but to install the l;atest gem :
+
+`gem install ar_loader`
+
 
 ## Example Spreadsheet
 
@@ -55,13 +65,14 @@ Include gem in your Rails project. Currently no support for AR usage outside a R
 
   Example command lines:
 
-      jruby -S rake excel_load input=vendor\extensions\autotelik\fixtures\ExampleInfoWeb.xls
+      'rake excel_load input=vendor\extensions\autotelik\fixtures\ExampleInfoWeb.xls
 
-      jruby -S rake excel_load input=C:\MyProducts.xls verbose=true
+      rake excel_load input=C:\MyProducts.xls verbose=true'
 
-  Images can be attached to any class, specified by parameter klass=XXX.
+  Images can be attached to any class defined with a suitable association. The class to use can be configured in rake task via
+  parameter klass=Xyz.
 
-  The default is to attempt to attach to a Product.
+  In the Spree tasks, this defaults to Product, so attempts to attach Image to a Product via Procuct SKU or Name.
 
   Lookup is performed either via the SKU being prepended to the image name or by the image name being equal to the **name attribute** of the klass in question.
 
