@@ -16,13 +16,13 @@ product_properties, will map from column headings such as 'product_properties',
 
 Add gem instruction to your Gemfile. To use the Excel loader, JRuby is required, so to use in a mixed setup
 of JRuby and deployed to other Rubies, use the following guard.
-`
+
   if(RUBY_PLATFORM =~ /java/)
       gem 'activerecord-jdbcmysql-adapter'
   else
       gem 'mysql'
   end
-`
+
 Currently not tested AR usage outside a Rails Project but to install the l;atest gem :
 
 `gem install ar_loader`
