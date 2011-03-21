@@ -17,16 +17,15 @@ product_properties, will map from column headings such as 'product_properties',
 Add gem instruction to your Gemfile. To use the Excel loader, JRuby is required, so to use in a mixed setup
 of JRuby and deployed to other Rubies, use the following guard.
 
-  if(RUBY_PLATFORM =~ /java/)
-      gem 'activerecord-jdbcmysql-adapter'
-  else
-      gem 'mysql'
-  end
+    if(RUBY_PLATFORM =~ /java/)
+         gem 'activerecord-jdbcmysql-adapter'
+    else
+        gem 'mysql'
+    end
 
 Currently not tested AR usage outside a Rails Project but to install the l;atest gem :
 
-`gem install ar_loader`
-
+    `gem install ar_loader`
 
 ## Example Spreadsheet
 
@@ -65,21 +64,22 @@ Currently not tested AR usage outside a Rails Project but to install the l;atest
 
   Example command lines:
 
-      'rake excel_load input=vendor\extensions\autotelik\fixtures\ExampleInfoWeb.xls
+    rake excel_load input=vendor\extensions\autotelik\fixtures\ExampleInfoWeb.xls
 
-      rake excel_load input=C:\MyProducts.xls verbose=true'
+    rake excel_load input=C:\MyProducts.xls verbose=true'
+
+  **Seamless Image loading can be achieved by ensuring SKU or class Name features in Image filename.
+
+  Lookup is performed either via the SKU being prepended to the image name, or by the image name being equal to the **name attribute** of the klass in question.
 
   Images can be attached to any class defined with a suitable association. The class to use can be configured in rake task via
   parameter klass=Xyz.
 
-  In the Spree tasks, this defaults to Product, so attempts to attach Image to a Product via Procuct SKU or Name.
-
-  Lookup is performed either via the SKU being prepended to the image name or by the image name being equal to the **name attribute** of the klass in question.
-
+  In the Spree tasks, this defaults to Product, so attempts to attach Image to a Product via Product SKU or Name.
+ 
   Image loading **does not** specifically require JRuby
 
-  Fairly seamless Image loading can be achieved by ensuring the SKU or product Name
-  feature in the image filename. 
+  A report is generated in the current working directory detailing any Images in the paths that could not be matched with a Product.
 
   Example cmd lines :
 
@@ -88,6 +88,12 @@ Currently not tested AR usage outside a Rails Project but to install the l;atest
       rake image_load input="C:\images\TaxonIcons" skip_if_no_assoc=true klass=Taxon
 
 ## Example Wrapper Tasks for Spree Site Extension
+
+These tasks show how to write your own high level wrapper task, that will seed the database from multiple spreedsheets.
+
+The images in this example have been named with the SKU present in name (separated by whitespace) e.g "PRINT_001 Stonehenge.jpg"
+
+A report is generated in the current working directory detailing any Images in the paths that could not be matched with a Product.
 
     require 'ar_loader'
 
@@ -164,15 +170,13 @@ Example - Display  values :
 ## TODO
 
   - Make more generic, so have smart switching to Ruby and directly support csv,
-  when JRuby and/or Excel not available.
-
-  - Look to support Open Office.
+    when JRuby and/or Excel not available.
 
   - Smart sorting of column processing order ....
 
-  Does not currently ensure mandatory columns (for valid?) processed first.
-  Since Product needs saving before associations can be processed, user currently
-  needs to ensure SKU, name, price columns are among first columns
+    Does not currently ensure mandatory columns (for valid?) processed first.
+    Since Product needs saving before associations can be processed, user currently
+    needs to ensure SKU, name, price columns are among first columns
 
 ## License
 
