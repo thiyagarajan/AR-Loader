@@ -4,6 +4,7 @@ require 'rake/clean'
 require 'rake/gempackagetask'
 require 'rake/rdoctask'
 require 'rake/testtask'
+require "lib/ar_loader"
 
 # Copyright:: (c) Autotelik Media Ltd 2011
 # Author ::   Tom Statter
@@ -20,8 +21,6 @@ require 'rake/testtask'
 #
 #             TODO - Switch for non JRuby Rubies, enable load via CSV file instead of Excel.
 #
-require "lib/ar_loader"
-
 ArLoader::require_tasks
 
 spec = Gem::Specification.new do |s|
@@ -30,9 +29,9 @@ spec = Gem::Specification.new do |s|
   s.has_rdoc = true
   s.extra_rdoc_files = ['README.markdown', 'LICENSE']
   s.summary = 'File based loader for Active Record models'
-  s.description = 'A file based loader for Active Record models. Seed database directly from Excel/CSV'
+  s.description = 'A file based loader for Active Record models. Seed database directly from Excel/CSV. Includes rake support for Spree'
   s.author = 'thomas statter'
-  s.email = 'gems@autotelik.co.uk'
+  s.email = 'rubygems@autotelik.co.uk'
   s.date = DateTime.now.strftime("%Y-%m-%d")
   s.homepage = %q{http://www.autotelik.co.uk}
 

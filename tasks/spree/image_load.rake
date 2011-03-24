@@ -1,0 +1,103 @@
+# Copyright:: (c) Autotelik Media Ltd 2011
+# Author ::   Tom Statter
+# Date ::     Feb 2011
+# License::   MIT. Free, Open Source.
+#
+# Usage from rake : rake image_load input=path_to_images
+#
+# => rake image_load input=vendor\extensions\autotelik\fixtures\
+# => rake image_load input="C:\images\photos large' dummy=true
+# => rake image_load input="C:\images\taxon_icons" skip_if_no_assoc=true klass=Taxon
+
+namespace :autotelik do
+
+  namespace :spree do
+
+    desc "Populate the DB with images.\nDefault location db/image_seeds, or specify :input=<path> or dir under db/image_seeds with :folder"
+    # :dummy => dummy run without actual saving to DB
+    task :image_load, :input, :folder, :dummy, :sku, :skip_if_no_assoc, :skip_if_loaded, :klass, :needs => :environment do |t, args|
+
+      require 'image_loader'
+
+      raise "USAGE: Please specify one of :input or :folder" if(args[:input] && args[:folder])
+      puts  "SKU not specified " if(args[:input] && args[:folder])
+
+      if args[:input]
+        @image_cache = args[:input]
+      else
+        @image_cache =  File.join(Rails.root, "db", "image_seeds")
+        @image_cache =  File.join(@image_cache, args[:folder]) if(args[:folder])
+      end
+
+      klazz = args[:klass] ? Kernal.const_get(args[:klass]) : Product
+
+      image_loader = ImageLoader.new
+
+      if(File.exists? @image_cache )
+        puts "Loading images from #{@image_cache}"
+
+        missing_records = []
+        Dir.glob("#{@image_cache}/*.{jpg,png,gif}") do |image_name|
+
+          puts "Processing #{image_name} : #{File.exists?(image_name)}"
+          base_name = File.basename(image_name, '.*')
+
+          record = nil
+          if(klazz == Product && args[:sku])
+            sku = base_name.slice!(/\w+/)
+            sku.strip!
+            base_name.strip!
+
+            puts "Looking fo SKU #{sku}"
+            record = Variant.find_by_sku(sku)
+            if record
+              record = record.product   # SKU stored on Variant but we want it's master Product
+            else
+              puts "Looking for NAME [#{base_name}]"
+              record = klazz.find_by_name(base_name)
+            end
+          else
+            puts "Looking for #{klazz.name} with NAME [#{base_name}]"
+            record = klazz.find_by_name(base_name)
+          end
+      
+          if(record)
+            puts "FOUND: #{record.inspect}"
+            puts "FOUND: #{record.images.collect(&:attachment_file_name).inspect}"
+            exists = record.images.detect {|i| puts "COMPARE #{i.attachment_file_name} => #{image_name}"; i.attachment_file_name == image_name }
+            puts "Check for existing attachment [#{exists}]"
+            if(args[:skip_if_loaded] && exists)
+              puts "Skipping - Image #{image_name} already loaded for #{klazz}"
+              next
+            end
+          else
+            missing_records << image_name
+          end
+
+          # Now do actual upload to DB unless we are doing a dummy run,
+          # or the Image must have an associated record
+          unless(args[:dummy] == 'true' || (args[:skip_if_no_assoc] && record.nil?))
+            image_loader.refresh()
+            puts "Process Image"
+            image_loader.process( image_name, record )
+          end
+
+        end
+
+        unless missing_records.empty?
+          FileUtils.mkdir_p('MissingRecords') unless File.directory?('MissingRecords')
+        
+          puts '\nMISSING Records Report>>'
+          missing_records.each do |i|
+            puts "Copy #{i} to MissingRecords folder"
+            FileUtils.cp( i, 'MissingRecords')  unless(args[:dummy] == 'true')
+          end
+        end
+
+      else
+        puts "ERROR: Supplied Path #{@image_cache} not accesible"
+        exit(-1)
+      end
+    end
+  end
+end

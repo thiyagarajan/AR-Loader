@@ -1,9 +1,9 @@
 # Copyright:: (c) Autotelik Media Ltd 2011
 # Author ::   Tom Statter
 # Date ::     Feb 2011
-# License::   TBD. Free, Open Source. MIT ?
+# License::   MIT. Free, Open Source.
 #
-# REQUIRES:   JRuby
+# REQUIRES:   JRuby access to Java
 #
 # Usage from rake : jruby -S rake excel_loader input=<file.xls>
 #
@@ -12,20 +12,14 @@
 #
 namespace :autotelik do
 
-  desc "Populate AR model's table with data stored in Excel"
-  task :excel_load, :klass, :input, :verbose, :sku_prefix, :needs => :environment do |t, args|
+  desc "Populate a Spree database with Product/Varient data stored in Excel"
+  task :product_load, :input, :verbose, :sku_prefix, :needs => :environment do |t, args|
 
-    raise "USAGE: jruby -S rake excel_load input=excel_file.xls" unless args[:input]
-    raise "ERROR: Cannot process without AR Model - please supply model=<Class>" unless args[:class]
+    raise "USAGE: jruby -S rake product_load input=excel_file.xls" unless args[:input]
     raise "ERROR: Could not find file #{args[:input]}" unless File.exists?(args[:input])
-
-    klass =  Kernal.const_get(args[:model])
-    raise "ERROR: No such AR Model found - please check model=<Class>" unless(klass)
 
     require 'product_loader'
     require 'method_mapper_excel'
-
-    args[:class]
 
     @method_mapper = MethodMapperExcel.new(args[:input], Product)
 
@@ -36,13 +30,22 @@ namespace :autotelik do
       puts "Processing #{@excel.num_rows} rows"
     end
 
-    # TODO create YAML configuration file to drive mandatory columns
-    #
-    # TODO create YAML configuration file to drive defaults etc
+    # REQUIRED 'set' methods on Product i.e will not validate/save without these
+    required_methods = ['sku', 'name', 'price']
+
+    @method_mapper.check_mandatory( required_methods )
+
+    # COLUMNS WITH DEFAULTS - TODO create YAML configuration file to drive defaults etc
   
-    # Process spreadsheet and create model instances
-    
+    MethodDetail.set_default_value('available_on', Time.now.to_s(:db) )
+    MethodDetail.set_default_value('cost_price', 0.0 )
+
+    MethodDetail.set_prefix('sku', args[:sku_prefix] ) if args[:sku_prefix]
+
+    # Process spreadsheet and create Products
     method_names = @method_mapper.method_names
+
+    sku_index = method_names.index('sku')
 
     Product.transaction do
       @products =  []
@@ -62,14 +65,17 @@ namespace :autotelik do
         loader = ProductLoader.new()
 
         # TODO - Smart sorting of column processing order ....
-        # Does not currently ensure mandatory columns (for valid?) processed first but model needs saving
-        # before associations can be processed so user should ensure mandatory columns are prior to associations
+        # Does not currently ensure mandatory columns (for valid?) processed first but Product needs saving
+        # before associations can be processed so user should ensure SKU, name, price columns are among first columns
 
         @method_mapper.methods.each_with_index do |method_map, col|
-
+          product_data_row.getCell(col).setCellType(JExcelFile::HSSFCell::CELL_TYPE_STRING) if(col == sku_index)
           loader.process(method_map, @excel.value(product_data_row, col))
           begin
-            loader.load_object.save if( loader.load_object.valid? && loader.load_object.new_record? )
+            prod = loader.load_object
+            if( prod.valid? && prod.new_record? )
+              prod.save
+            end
           rescue
             raise "Error processing Product"
           end

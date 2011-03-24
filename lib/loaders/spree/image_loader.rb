@@ -1,7 +1,7 @@
 # Copyright:: (c) Autotelik Media Ltd 2011
 # Author ::   Tom Statter
 # Date ::     Jan 2011
-# License::   TBD. Free, Open Source. MIT ?
+# License::   MIT. Free, Open Source.
 #
 require 'loader_base'
 
@@ -13,13 +13,19 @@ class ImageLoader < LoaderBase
     raise "Failed to create Image for loading" unless @load_object
   end
 
+  def refresh
+    @load_object = Image.create
+  end
 
   # Note the Spree Image model sets default storage path to
   # => :path => ":rails_root/public/assets/products/:id/:style/:basename.:extension"
 
   def process( image_path, record = nil)
 
-    return unless File.exists?(image_path)
+    unless File.exists?(image_path)
+      puts "ERROR : Invalid Path"
+      return
+    end
 
     alt = (record and record.respond_to? :name) ? record.name : ""
 
@@ -36,6 +42,6 @@ class ImageLoader < LoaderBase
     @load_object.attachment.reprocess!
     @load_object.viewable = record if record
 
-    puts @load_object.save ? "Image: #{@load_object.inspect} added successfully" : "Problem saving image: #{@load_object}"
+    puts @load_object.save ? "Success: Uploaded Image: #{@load_object.inspect}" : "ERROR : Problem saving to DB Image: #{@load_object}"
   end
 end

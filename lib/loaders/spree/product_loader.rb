@@ -23,6 +23,7 @@ class ProductLoader < LoaderBase
   def process( method_map, value)
     @value = value
 
+    #puts "DEBUG : process #{method_map.inspect} : #{value.inspect}"
     # Special case for OptionTypes as it's two stage process
     # First add the possible option_types to Product, then we are able
     # to define Variants on those options.
@@ -46,9 +47,8 @@ class ProductLoader < LoaderBase
           ovname.strip!
           ov = OptionValue.find_by_name(ovname)
           if ov
-            #puts "DEBUG: Create New Variant on #{ovname}"
-            object = Variant.new( :sku => "#{@load_object.sku}_#{i}", :available_on => @load_object.available_on)
-
+            object = Variant.new( :sku => "#{@load_object.sku}_#{i}", :price => @load_object.price, :available_on => @load_object.available_on)
+            #puts "DEBUG: Create New Variant: #{object.inspect}"
             object.option_values << ov
             @load_object.variants << object
           else
