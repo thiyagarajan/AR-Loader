@@ -76,7 +76,8 @@ namespace :autotelik do
             if( prod.valid? && prod.new_record? )
               prod.save
             end
-          rescue
+          rescue => e
+            puts "ERROR: Product save #{e.inspect}"
             raise "Error processing Product"
           end
         end

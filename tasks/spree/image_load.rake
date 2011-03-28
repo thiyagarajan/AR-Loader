@@ -62,11 +62,10 @@ namespace :autotelik do
           end
       
           if(record)
-            puts "FOUND: #{record.inspect}"
-            puts "FOUND: #{record.images.collect(&:attachment_file_name).inspect}"
+            puts "Found record for attachment : #{record.inspect}"
             exists = record.images.detect {|i| puts "COMPARE #{i.attachment_file_name} => #{image_name}"; i.attachment_file_name == image_name }
-            puts "Check for existing attachment [#{exists}]"
-            if(args[:skip_if_loaded] && exists)
+            puts "Found existing attachments [#{exists}]" unless(exists.nil?)
+            if(args[:skip_if_loaded] && !exists.nil?)
               puts "Skipping - Image #{image_name} already loaded for #{klazz}"
               next
             end
