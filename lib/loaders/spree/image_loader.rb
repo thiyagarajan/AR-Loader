@@ -7,14 +7,9 @@ require 'loader_base'
 
 class ImageLoader < LoaderBase
 
-  def initialize(image = nil)
-    obj = image || Image.create
-    super( obj )
+  def initialize(klass = Image, image = nil)
+    super( klass, image )
     raise "Failed to create Image for loading" unless @load_object
-  end
-
-  def refresh
-    @load_object = Image.create
   end
 
   # Note the Spree Image model sets default storage path to
