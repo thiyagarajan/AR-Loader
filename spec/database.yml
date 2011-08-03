@@ -1,0 +1,6 @@
+<% adapter = 'jdbcsqlite3' %>
+
+test:
+  adapter: <%= adapter %>
+  encoding: utf8
+  database: :memory

@@ -29,7 +29,7 @@ namespace :autotelik do
         @image_cache =  File.join(@image_cache, args[:folder]) if(args[:folder])
       end
 
-      klazz = args[:klass] ? Kernal.const_get(args[:klass]) : Product
+      klazz = args[:klass] ? Kernel.const_get(args[:klass]) : Product
 
       image_loader = ImageLoader.new
 

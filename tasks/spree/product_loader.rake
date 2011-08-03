@@ -7,12 +7,12 @@
 #
 # Usage from rake : jruby -S rake excel_loader input=<file.xls>
 #
-# e.g.  => jruby -S rake excel_load input=vendor\extensions\autotelik\fixtures\ExampleInfoWeb.xls
-#       => jruby -S rake excel_load input=C:\MyProducts.xls verbose=true
+# e.g.  => jruby -S rake autotelik:product_load input=vendor\extensions\autotelik\fixtures\ExampleInfoWeb.xls
+#       => jruby -S rake autotelik:product_load input=C:\MyProducts.xls verbose=true
 #
 namespace :autotelik do
 
-  desc "Populate a Spree database with Product/Varient data stored in Excel"
+  desc "Populate Spree db with Product/Varient data from .xls (Excel) file"
   task :product_load, :input, :verbose, :sku_prefix, :needs => :environment do |t, args|
 
     raise "USAGE: jruby -S rake product_load input=excel_file.xls" unless args[:input]
