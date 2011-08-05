@@ -2,7 +2,7 @@ class CreateTestBed < ActiveRecord::Migration
   
   def self.up
 
-    create_table :test_model do |t|
+    create_table :test_models do |t|
       t.string   :value_as_string
       t.text     :value_as_text
       t.boolean  :value_as_boolean, :default => false
@@ -10,7 +10,7 @@ class CreateTestBed < ActiveRecord::Migration
       t.timestamps
     end
 
-    create_table :test_association_model do |t|
+    create_table :test_association_models do |t|
       t.string     :value_as_string
       t.references :test_model
       t.timestamps
@@ -19,7 +19,7 @@ class CreateTestBed < ActiveRecord::Migration
   end
 
   def self.down
-    drop_table :test_model
-    drop_table :test_association_model
+    drop_table :test_models
+    drop_table :test_association_models
   end
 end

@@ -1,6 +1,18 @@
 <% adapter = 'jdbcsqlite3' %>
 
-test:
+test_mysql:
+  adapter: jdbcmysql
+  database: ar_loader_test
+  username: test
+  password: test
+  host: localhost
+
+test_memory:
   adapter: <%= adapter %>
-  encoding: utf8
   database: :memory
+
+test_file:
+  adapter: <%= adapter %>
+  database: 'ar_loader_test'
+  encoding: utf8
+  host: localhost

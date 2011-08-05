@@ -1,35 +1,13 @@
+# Copyright:: (c) Autotelik Media Ltd 2011
+# Author ::   Tom Statter
+# Date ::     Aug 2011
+# License::   MIT
+#
+# Details::   Specs for Excel aspect of Active Record Loader
+#
 require File.dirname(__FILE__) + '/spec_helper'
 
 require 'erb'
-require File.dirname(__FILE__) + '/../lib/ar_loader'
-
-# We are not setup as a Rails project so need to mimic an active record database setup so
-# we have some  AR models top test against. Create an in memory database from scratch.
-# 
-def db_connect( env = 'test')
-
-  configuration = {:rails_env => env }
-
-  # Some active record stuff seems to rely on the RAILS_ENV being set ?
-
-  ENV['RAILS_ENV'] = configuration[:rails_env]
-
-  configuration[:database_configuration] = YAML::load(ERB.new(IO.read( File.dirname(__FILE__) + '/database.yml')).result)
-  db = configuration[:database_configuration][ configuration[:rails_env] ]
-
-  puts "Setting DB Config - #{db.inspect}"
-  ActiveRecord::Base.configurations = db
-
-  puts "Connecting to DB"
-  ActiveRecord::Base.establish_connection( db )
-
-  puts "Connected to DB Config - #{configuration[:rails_env]}"
-end
-
-def create_in_memory_database
-  ActiveRecord::Migrator.up('db/migrate')
-end
-
 
 class TestModel < ActiveRecord::Base
   has_many :TestAssociationModel
@@ -41,9 +19,16 @@ end
 
 describe 'ExcelLoader' do
 
-  before do
-    db_connect
-    create_in_memory_database
+  before(:all) do
+    db_connect( 'test_mysql' )
+    migrate_up
+  end
+  
+  before(:each) do
+    @row = TestModel.create( :value_as_string => 'I am a String', :value_as_text => "I am lots\n of text", :value_as_boolean => true)
+    
+      #:value_as_datetime, :default => nil
+    puts "YES TABLE:" if TestModel.table_exists?
     @klazz = TestModel
     MethodMapper.clear
   end
@@ -64,36 +49,36 @@ describe 'ExcelLoader' do
 
   end
 
-  it "should populate operators respecting unique option" do
-    MethodMapper.find_operators( @klazz, :unique => true )
-
-    hmf = MethodMapper.has_many_for(@klazz)
-    arf = MethodMapper.assignments_for(@klazz)
-
-    (hmf & arf).should be_empty
-  end
-
-  it "should populate assignment method and col type for different forms of a column name" do
-
-    MethodMapper.find_operators( @klazz )
-  end
-
-  it "should populate both methods for different forms of an association name" do
-
-    MethodMapper.find_operators( @klazz )
-  end
-
-  it "should not populate anything when  non existent column name" do
-    MethodMapper.find_operators( @klazz )
-  end
-
-  it "should enable correct assignment and sending of a value to AR model" do
-    MethodMapper.find_operators( @klazz )
-  end
-
-  it "should enable correct assignment and sending of association to AR model" do
-    MethodMapper.find_operators( @klazz )
-  end
+#  it "should populate operators respecting unique option" do
+#    MethodMapper.find_operators( @klazz, :unique => true )
+#
+#    hmf = MethodMapper.has_many_for(@klazz)
+#    arf = MethodMapper.assignments_for(@klazz)
+#
+#    (hmf & arf).should be_empty
+#  end
+#
+#  it "should populate assignment method and col type for different forms of a column name" do
+#
+#    MethodMapper.find_operators( @klazz )
+#  end
+#
+#  it "should populate both methods for different forms of an association name" do
+#
+#    MethodMapper.find_operators( @klazz )
+#  end
+#
+#  it "should not populate anything when  non existent column name" do
+#    MethodMapper.find_operators( @klazz )
+#  end
+#
+#  it "should enable correct assignment and sending of a value to AR model" do
+#    MethodMapper.find_operators( @klazz )
+#  end
+#
+#  it "should enable correct assignment and sending of association to AR model" do
+#    MethodMapper.find_operators( @klazz )
+#  end
 
 
 end
