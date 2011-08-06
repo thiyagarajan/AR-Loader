@@ -55,19 +55,21 @@ class MethodMapper
   #
   def self.find_operators(klass, options = {} )
 
+    # Find the has_many associations which can be populated via <<
     if( options[:reload] || @@has_many[klass].nil? )
       @@has_many[klass] = klass.reflect_on_all_associations(:has_many).map { |i| i.name.to_s }
       klass.reflect_on_all_associations(:has_and_belongs_to_many).inject(@@has_many[klass]) { |x,i| x << i.name.to_s }
     end
-
     # puts "DEBUG: Has Many Associations:", @@has_many[klass].inspect
 
+    # Find the belongs_to associations which can be populated via  Model.belongs_to_name = OtherArModelObject
     if( options[:reload] || @@belongs_to[klass].nil? )
       @@belongs_to[klass] = klass.reflect_on_all_associations(:belongs_to).map { |i| i.name.to_s }
     end
 
-    # puts "DEBUG: Belongs To Associations:", @@belongs_to[klass].inspect
+    puts "Belongs To Associations:", @@belongs_to[klass].inspect
 
+    # Find the model's column associations which can be populated via = value
     if( options[:reload] || @@assignments[klass].nil? )
       @@assignments[klass] = (klass.column_names + klass.instance_methods.grep(/=/).map{|i| i.gsub(/=/, '')})
       @@assignments[klass] = @@assignments[klass] - @@has_many[klass] if(@@has_many[klass])
@@ -114,6 +116,7 @@ class MethodMapper
   end
 
   def self.clear
+    @@belongs_to.clear
     @@has_many.clear
     @@assignments.clear
     @@column_types.clear
@@ -123,6 +126,10 @@ class MethodMapper
     "#{klass.name}:#{column}"
   end
 
+  # TODO - remove use of class variables - not good Ruby design
+  def self.belongs_to
+    @@belongs_to
+  end
   def self.has_many
     @@has_many
   end

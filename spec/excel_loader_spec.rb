@@ -20,32 +20,34 @@ end
 describe 'ExcelLoader' do
 
   before(:all) do
-    db_connect( 'test_mysql' )
+    db_connect( 'test_file' )    # , test_memory, test_mysql
     migrate_up
   end
   
   before(:each) do
     @row = TestModel.create( :value_as_string => 'I am a String', :value_as_text => "I am lots\n of text", :value_as_boolean => true)
-    
-      #:value_as_datetime, :default => nil
-    puts "YES TABLE:" if TestModel.table_exists?
+    #:value_as_datetime, :default => nil
     @klazz = TestModel
     MethodMapper.clear
   end
   
   it "should populate operators for a given AR model" do
-    MethodMapper.find_operators( @klazz )
+    MethodMapper.find_operators( TestModel )
 
     MethodMapper.has_many.should_not be_empty
+    MethodMapper.has_many[TestModel].should include('TestAssociationModel')
+
     MethodMapper.assignments.should_not be_empty
+    MethodMapper.assignments[TestModel].should include('value_as_string')
+    MethodMapper.assignments[TestModel].should include('value_as_text')
 
-    hmf = MethodMapper.has_many_for(@klazz)
-    arf = MethodMapper.assignments_for(@klazz)
+    MethodMapper.belongs_to.should_not be_empty
+    MethodMapper.belongs_to[TestModel].should be_empty
 
-    (hmf & arf).should_not be_empty       # Associations provide << or =
 
     MethodMapper.column_types.should be_is_a(Hash)
     MethodMapper.column_types.should_not be_empty
+    MethodMapper.column_types[TestModel].size.should == 6
 
   end
 
