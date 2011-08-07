@@ -1,99 +1,131 @@
-unless defined? SPREE_ROOT
-  ENV["RAILS_ENV"] = "test"
-  case
-  when ENV["SPREE_ENV_FILE"]
-    require ENV["SPREE_ENV_FILE"]
-  when File.dirname(__FILE__) =~ %r{vendor/SPREE/vendor/extensions}
-    require "#{File.expand_path(File.dirname(__FILE__) + "/../../../../../../")}/config/environment"
-  else
-    require "#{File.expand_path(File.dirname(__FILE__) + "/../../../../")}/config/environment"
-  end
-end
-require "#{SPREE_ROOT}/spec/spec_helper"
-
-if File.directory?(File.dirname(__FILE__) + "/scenarios")
-  Scenario.load_paths.unshift File.dirname(__FILE__) + "/scenarios"
-end
-if File.directory?(File.dirname(__FILE__) + "/matchers")
-  Dir[File.dirname(__FILE__) + "/matchers/*.rb"].each {|file| require file }
-end
-
 require File.dirname(__FILE__) + '/spec_helper'
 
-describe 'ExcelLoader' do
+require 'spree'
+
+require 'spree_loader'
+
+describe 'SpreeLoader' do
+
+  before(:all) do
+    db_connect( 'test_file' )    # , test_memory, test_mysql
+    Spree.load
+    Spree.migrate_up
+  end
 
   before do
     @klazz = Product
     MethodMapper.clear
-  end
-  
-  it "should populate operators for a given AR model" do
     MethodMapper.find_operators( @klazz )
 
+    # TOFIX - weird error
+    # NameError:
+    #   undefined local variable or method `check_price' for #<Variant:0x1031f6658>
+    # but that method defined on Variant class in variant.rb
+
+    #@product = Product.new( :sku => "TRspec001", :name => 'Test RSPEC Product', :price => 99.99 )
+    #@product.save
+  end
+  
+  it "should populate operators for a Spree Product" do
+  
     MethodMapper.has_many.should_not be_empty
+    MethodMapper.belongs_to.should_not be_empty
     MethodMapper.assignments.should_not be_empty
 
-    hmf = MethodMapper.has_many_for(@klazz)
-    arf = MethodMapper.assignments_for(@klazz)
 
-    (hmf & arf).should_not be_empty       # Associations provide << or =
+    assign = MethodMapper.assignments_for(@klazz)
 
-    hmf.should include('properties')
-    arf.should include('count_on_hand')   # example of a column
-    arf.should include('cost_price')      # example of delegated assignment (available through Variant)
+    assign.should include('count_on_hand')   # Example of a simple column
+    assign.should include('cost_price')      # Example of delegated assignment (available through Variant)
+
+    MethodMapper.assignments[@klazz].should include('cost_price')
+
+    has_many_ops = MethodMapper.has_many_for(@klazz)
+
+    has_many_ops.should include('properties')   # Product can have many properties
+
+    MethodMapper.has_many[@klazz].should include('properties')
+
+    btf = MethodMapper.belongs_to_for(@klazz)
+
+    btf.should include('tax_category')    # Example of a belongs_to assignment
+
+    MethodMapper.belongs_to[@klazz].should include('tax_category')
+
 
     MethodMapper.column_types.should be_is_a(Hash)
     MethodMapper.column_types.should_not be_empty
-
-    MethodMapper.column_type_for(@klazz, 'count_on_hand').should_not be_nil
+    MethodMapper.column_types[@klazz].size.should == @klazz.columns.size
   end
 
-  it "should populate operators respecting unique option" do
-    MethodMapper.find_operators( @klazz, :unique => true )
+  it "should populate assigment without associations" do
+    
+    # we should remove has-many & belongs_to from basic assignment set as they require a DB lookup
+    # or a Model.create call, not a simple assignment
 
-    hmf = MethodMapper.has_many_for(@klazz)
-    arf = MethodMapper.assignments_for(@klazz)
+    MethodMapper.assignments_for(@klazz).should_not include( MethodMapper.belongs_to_for(@klazz) )
+    MethodMapper.assignments_for(@klazz).should_not include( MethodMapper.has_many_for(@klazz) )
 
-    (hmf & arf).should be_empty
   end
 
-  it "should populate assignment method and col type for different forms of a column name" do
+  it "should find method details correctly for different forms of a column name" do
 
-    MethodMapper.find_operators( @klazz )
 
     ["Count On hand", 'count_on_hand', "Count OnHand", "COUNT ONHand"].each do |format|
-      mmap = MethodMapper.determine_calls( @klazz, format )
 
-      mmap.class.should == MethodDetail
+      method_details = MethodMapper.find_method_detail( @klazz, format )
 
-      mmap.assignment.should == 'count_on_hand='
-      mmap.has_many.should be_nil
+      method_details.class.should == MethodDetail
 
-      mmap.col_type.should_not be_nil
-      mmap.col_type.name.should == 'count_on_hand'
-      mmap.col_type.default.should == 0
-      mmap.col_type.sql_type.should == 'int(10)'
-      mmap.col_type.type.should == :integer
+      puts method_details.inspect
+
+      method_details.operator.should == 'count_on_hand'
+      method_details.assignment.should == 'count_on_hand'
+      method_details.operator_for(:assignment).should == 'count_on_hand'
+
+      method_details.operator_for(:belongs_to).should be_nil
+      method_details.operator_for(:has_many).should be_nil
+
+      method_details.belongs_to.should be_nil
+      method_details.has_many.should be_nil
+
+
+      method_details.col_type.should_not be_nil
+      method_details.col_type.name.should == 'count_on_hand'
+      method_details.col_type.default.should == 0
+      method_details.col_type.sql_type.should include 'int'   # works on mysql and sqlite
+      method_details.col_type.type.should == :integer
     end
   end
 
-  it "should populate both methods for different forms of an association name" do
+  it "should populate method details correctly for has_many forms of association name" do
 
-    MethodMapper.find_operators( @klazz )
+
+    MethodMapper.has_many[@klazz].should include('product_option_types')
+
+
     ["product_option_types", "product option types", 'product Option_types', "ProductOptionTypes", "Product_Option_Types"].each do |format|
-      mmap = MethodMapper.determine_calls( @klazz, format )
+      method_details = MethodMapper.find_method_detail( @klazz, format )
 
-      mmap.assignment.should == 'product_option_types='
-      mmap.has_many.should   == 'product_option_types'
+      method_details.name.should eq( format )
 
-      mmap.col_type.should be_nil
+      method_details.operator_for(:has_many).should eq('product_option_types')
+      method_details.operator_for(:belongs_to).should be_nil
+      method_details.operator_for(:assignment).should be_nil
+
+      method_details.operator().should eq('product_option_types')
+
+      method_details.has_many.should   == 'product_option_types'
+      method_details.assignment.should be_nil
+      method_details.col_type.should be_nil
+      
     end
   end
 
 
   it "should not populate anything when  non existent column name" do
     ["On sale", 'on_sale'].each do |format|
-      mmap = MethodMapper.determine_calls( @klazz, format )
+      mmap = MethodMapper.find_method_detail( @klazz, format )
 
       mmap.class.should == MethodDetail
       mmap.assignment.should be_nil
@@ -102,52 +134,62 @@ describe 'ExcelLoader' do
     end
   end
 
-  it "should enable correct assignment and sending of a value to AR model" do
+  it "should enable correct assignment and sending of a value on Product" do
 
-    MethodMapper.find_operators( @klazz )
+    method = MethodMapper.find_method_detail( @klazz, 'count on hand' )
+    method.operator.should == 'count_on_hand'
+
+    klazz_object = @klazz.new
+
+    klazz_object.should be_new_record
+
+    method.assign( klazz_object, 2 )
+
+    klazz_object.count_on_hand.should == 2
+
+    method = MethodMapper.find_method_detail( @klazz, 'SKU' )
+    method.operator.should == 'sku'
     
-    mmap = MethodMapper.determine_calls( @klazz, 'count on hand' )
-    mmap.assignment.should == 'count_on_hand='
+    method.assign( klazz_object, 'TEST_SK 001')
+    
+    klazz_object.sku.should == 'TEST_SK 001'
 
-    x = @klazz.new
-
-    x.should be_new_record
-
-    x.send( mmap.assignment, 2 )
-    x.count_on_hand.should == 2
-    x.on_hand.should == 2     # helper method I know looks at same thing
-
-    mmap = MethodMapper.determine_calls( @klazz, 'SKU' )
-    mmap.assignment.should == 'sku='
-    x.send( mmap.assignment, 'TEST_SK 001' )
-    x.sku.should == 'TEST_SK 001'
   end
 
-  it "should enable correct assignment and sending of association to AR model" do
+  it "should enable assignment to association of new AR model" do
 
     MethodMapper.find_operators( @klazz )
 
-    mmap = MethodMapper.determine_calls( @klazz, 'taxons' )
-    mmap.has_many.should == 'taxons'
+    mmap = MethodMapper.find_method_detail( @klazz, 'taxons' )
 
-    x = @klazz.new
+    mmap.has_many.should == 'taxons'
+    mmap.operator.should == 'taxons'
+
+    klazz_object = @klazz.new
 
     # NEW ASSOCIATION ASSIGNMENT  v.,mn
-    x.send( mmap.has_many ) << Taxon.new
-    x.taxons.size.should == 1
+    klazz_object.send( mmap.has_many ) << Taxon.new
 
-    x.send( mmap.has_many ) << [Taxon.new, Taxon.new]
-    x.taxons.size.should == 3
+    klazz_object.taxons.size.should == 1
 
-    # EXISTING ASSOCIATIONS
-    x = Product.find :first
+    klazz_object.send( mmap.has_many ) << [Taxon.new, Taxon.new]
+    klazz_object.taxons.size.should == 3
 
-    t = Taxonomy.find_or_create_by_name( 'BlahSpecTest' )
+  end
 
-    if x
-      sz = x.taxons.size
-      x.send(mmap.has_many) << t.root
-      x.taxons.size.should == sz + 1
+  it "should enable assignment to association of existing AR model" do
+
+    mmap = MethodMapper.find_method_detail( @klazz, 'taxons' )
+    mmap.operator.should == 'taxons'
+
+    #txn = Taxon.find_or_create_by_name( 'RSpecTestTaxon' )
+
+    #t = Taxonomy.find_or_create_by_name( 'BlahSpecTest', :root => txn )
+
+    if @product
+      sz = @product.taxons.size
+      @product.send(mmap.has_many) << t.root
+      @product.taxons.size.should == sz + 1
     else
       puts "WARNING : Test not run could not find any Test Products"
     end

@@ -21,6 +21,9 @@
 #
 # WORD_OLE_CONST.const_get( 'LesCR' ) or WORD_OLE_CONST::LesCR
 #   => 1
+
+if(Guards::windows?)
+
 require 'win32ole'
 
 # Module for constants to be loaded int
@@ -66,5 +69,11 @@ class Word
 
   def quit
     @wd.quit()
+  end
+end
+
+else
+
+  class Word
   end
 end

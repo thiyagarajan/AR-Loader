@@ -33,6 +33,9 @@ def db_connect( env = 'test_file')
   puts "Connecting to DB"
   ActiveRecord::Base.establish_connection( db )
 
+  require 'logger'
+  ActiveRecord::Base.logger = Logger.new(STDOUT)
+
   puts "Connected to DB - #{ActiveRecord::Base.connection.inspect}"
 end
 
@@ -44,6 +47,7 @@ end
 def migrate_up
   ActiveRecord::Migrator.up(  File.dirname(__FILE__) + '/db/migrate')
 end
+
 
 RSpec.configure do |config|
   # config.use_transactional_fixtures = true

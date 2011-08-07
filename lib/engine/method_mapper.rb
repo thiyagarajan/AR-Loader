@@ -67,7 +67,7 @@ class MethodMapper
       @@belongs_to[klass] = klass.reflect_on_all_associations(:belongs_to).map { |i| i.name.to_s }
     end
 
-    puts "Belongs To Associations:", @@belongs_to[klass].inspect
+    #puts "Belongs To Associations:", @@belongs_to[klass].inspect
 
     # Find the model's column associations which can be populated via = value
     if( options[:reload] || @@assignments[klass].nil? )
@@ -78,8 +78,9 @@ class MethodMapper
       @@assignments[klass].uniq!
 
       @@assignments[klass].each do |assign|
+        @@column_types[klass] ||= {}
         found = klass.columns.find{ |col| col.name == assign }
-        @@column_types[column_key(klass, assign)] = found if found
+        @@column_types[klass].merge!( found.name => found) if found
       end
     end
   end
@@ -89,10 +90,13 @@ class MethodMapper
   #
   # If not nil returned method can be used directly in for example klass.new.send( call, .... )
   #
-  def self.find_method_detail( klass, name )
-    true_name, assign, belongs_to, has_many = nil, nil, nil, nil
-    
+  def self.find_method_detail( klass, external_name )
+    assign, belongs_to, has_many = nil, nil, nil
+
+    name = external_name.to_s
+
     # TODO - check out regexp to do this work better plus Inflections ??
+    # Want to be able to handle any of ["Count On hand", 'count_on_hand', "Count OnHand", "COUNT ONHand"]
     [
       name,
       name.gsub(' ', '_'),
@@ -100,19 +104,16 @@ class MethodMapper
       name.gsub(' ', '_').downcase,
       name.gsub(' ', '').downcase,
       name.gsub(' ', '_').underscore
-
     ].each do |n|
-      has_many   = (@@has_many[klass]    && @@has_many[klass].include?(n))   ?  n : nil
-      belongs_to = (@@belongs_to[klass]  && @@belongs_to[klass].include?(n)) ?  n : nil
-      assign     = (@@assignments[klass] && @@assignments[klass].include?(n))?  n + '=' : nil
-
-      if(assign || has_many || belongs_to)
-        true_name = n
-        break
-      end
+      has_many   = (has_many_for(klass).include?(n))   ?  n : nil
+        break if has_many
+      belongs_to = (belongs_to_for(klass).include?(n)) ?  n : nil
+        break if belongs_to
+      assign     = (assignments_for(klass).include?(n))?  n : nil
+        break if assign
     end
 
-    return MethodDetail.new(klass, true_name, assign, belongs_to, has_many, @@column_types[column_key(klass, true_name)])
+    return MethodDetail.new(klass, name, assign, belongs_to, has_many, @@column_types[klass])
   end
 
   def self.clear
@@ -140,15 +141,18 @@ class MethodMapper
     @@column_types
   end
 
+
+  def self.belongs_to_for(klass)
+    @@belongs_to[klass] || []
+  end
   def self.has_many_for(klass)
-    @@has_many[klass]
+    @@has_many[klass] || []
   end
   def self.assignments_for(klass)
-    @@assignments[klass]
+    @@assignments[klass] || []
   end
-
   def self.column_type_for(klass, column)
-    @@column_types[column_key(klass, column)]
+    @@column_types[klass] ?  @@column_types[klass][column] : []
   end
 
 

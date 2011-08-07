@@ -6,6 +6,26 @@
 # Details::   Active Record Loader
 #
 require 'active_record'
+require 'rbconfig'
+
+module Guards
+
+  def self.jruby?
+    return RUBY_PLATFORM == "java"
+  end
+  def self.mac?
+    RbConfig::CONFIG['target_os'] =~ /darwin/i
+  end
+
+  def self.linux?
+    RbConfig::CONFIG['target_os'] =~ /linux/i
+  end
+
+  def self.windows?
+    RbConfig::CONFIG['target_os'] =~ /mswin|mingw/i
+  end
+
+end
 
 module ArLoader
 
@@ -21,6 +41,7 @@ module ArLoader
   def self.root_path
     File.expand_path("#{File.dirname(__FILE__)}/..")
   end
+
 
   def self.require_libraries
 
@@ -63,4 +84,5 @@ module ArLoader
   
 end
 
-ArLoader::require_libraries
+puts 'require libs'
+loaded ||= ArLoader::require_libraries

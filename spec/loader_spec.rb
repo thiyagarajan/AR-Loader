@@ -22,22 +22,25 @@ describe 'ExcelLoader' do
   before(:all) do
     db_connect( 'test_file' )    # , test_memory, test_mysql
     migrate_up
+    @klazz = TestModel
   end
   
   before(:each) do
     @row = TestModel.create( :value_as_string => 'I am a String', :value_as_text => "I am lots\n of text", :value_as_boolean => true)
     #:value_as_datetime, :default => nil
     @klazz = TestModel
+
     MethodMapper.clear
+    MethodMapper.find_operators( @klazz )
   end
   
   it "should populate operators for a given AR model" do
-    MethodMapper.find_operators( TestModel )
 
     MethodMapper.has_many.should_not be_empty
     MethodMapper.has_many[TestModel].should include('TestAssociationModel')
 
     MethodMapper.assignments.should_not be_empty
+    MethodMapper.assignments[TestModel].should include('id')
     MethodMapper.assignments[TestModel].should include('value_as_string')
     MethodMapper.assignments[TestModel].should include('value_as_text')
 
@@ -47,40 +50,37 @@ describe 'ExcelLoader' do
 
     MethodMapper.column_types.should be_is_a(Hash)
     MethodMapper.column_types.should_not be_empty
-    MethodMapper.column_types[TestModel].size.should == 6
+    MethodMapper.column_types[TestModel].size.should == TestModel.columns.size
 
   end
 
-#  it "should populate operators respecting unique option" do
-#    MethodMapper.find_operators( @klazz, :unique => true )
-#
-#    hmf = MethodMapper.has_many_for(@klazz)
-#    arf = MethodMapper.assignments_for(@klazz)
-#
-#    (hmf & arf).should be_empty
-#  end
-#
-#  it "should populate assignment method and col type for different forms of a column name" do
-#
-#    MethodMapper.find_operators( @klazz )
-#  end
-#
-#  it "should populate both methods for different forms of an association name" do
-#
-#    MethodMapper.find_operators( @klazz )
-#  end
-#
-#  it "should not populate anything when  non existent column name" do
-#    MethodMapper.find_operators( @klazz )
-#  end
-#
-#  it "should enable correct assignment and sending of a value to AR model" do
-#    MethodMapper.find_operators( @klazz )
-#  end
-#
-#  it "should enable correct assignment and sending of association to AR model" do
-#    MethodMapper.find_operators( @klazz )
-#  end
+  it "should find method details correctly for different forms of a column name" do
 
+    [:value_as_string, 'value_as_string', "VALUE as_STRING", "value as string"].each do |format|
+
+      method_details = MethodMapper.find_method_detail( @klazz, format )
+
+      method_details.class.should == MethodDetail
+
+      puts method_details.inspect
+
+      method_details.operator.should == 'value_as_string'
+      method_details.assignment.should == 'value_as_string'
+      method_details.operator_for(:assignment).should == 'value_as_string'
+
+      method_details.operator_for(:belongs_to).should be_nil
+      method_details.operator_for(:has_many).should be_nil
+
+      method_details.belongs_to.should be_nil
+      method_details.has_many.should be_nil
+
+
+      method_details.col_type.should_not be_nil
+      method_details.col_type.name.should == 'value_as_string'
+      method_details.col_type.default.should == nil
+      method_details.col_type.sql_type.should include 'varchar(255)'   # db specific, sqlite
+      method_details.col_type.type.should == :string
+    end
+  end
 
 end
