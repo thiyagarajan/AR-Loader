@@ -1,4 +1,4 @@
-# AR Loader
+§# AR Loader
 
 General Active Record Loader with current focus on support for Spree.
 
