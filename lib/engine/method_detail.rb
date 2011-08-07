@@ -67,11 +67,11 @@ class MethodDetail
       insistent_belongs_to(record, data)
 
     elsif( @assignment && @col_type )
-      #puts "DEBUG : COl TYPE defined for #{@name} : #{@assignment} => #{data} #{@col_type.inspect}"
+      puts "DEBUG : COl TYPE defined for #{@name} : #{@assignment} => #{data} #{@col_type.inspect}"
       record.send( @assignment, @col_type.type_cast( data ) )
 
     elsif( @assignment )
-      #puts "DEBUG : No COL TYPE found for #{@name} : #{@assignment} => #{data}"
+      puts "DEBUG : No COL TYPE found for #{@name} : #{@assignment} => #{data}"
       insistent_assignment(record, data)
     end
   end
@@ -87,9 +87,8 @@ class MethodDetail
           break
         end
       rescue => e
-        puts e.inspect
+        puts "ERROR: #{e.inspect}"
         if(x == @@insistent_method_list.last)
-          puts  "I'm sorry I have failed to assign [#{value}] to #{@assignment}"
           raise "I'm sorry I have failed to assign [#{value}] to #{@assignment}" unless value.nil?
         end
       end
@@ -97,13 +96,15 @@ class MethodDetail
   end
 
   def insistent_assignment( record, value )
-    @@insistent_method_list ||= [:to_i, :to_f, :to_b]
+    puts "DEBUG: RECORD CLASS #{record.class}"
+    @@insistent_method_list ||= [:to_s, :to_i, :to_f, :to_b]
     begin
       record.send(@assignment, value)
     rescue => e
       puts e.inspect
       @@insistent_method_list.each do |f|
         begin
+
           record.send(@assignment, value.send( f) )
           break
         rescue => e

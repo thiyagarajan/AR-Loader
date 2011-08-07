@@ -3,9 +3,16 @@
 # Date ::     Aug 2010
 # License::   MIT
 #
+#  Details::  Base class for loaders, providing a process hook which populates a model,
+#             based on a method map and supplied value from a file - i.e a single column/row's string value.
+#             Note that although a single column, the string can be formatted to contain multiple values.
+#
+#             Tightly coupled with MethodMapper classes (in lib/engine) which contains full details of
+#             a file's column and it's correlated AR associations.
+#
 class LoaderBase
 
-  attr_accessor :load_object, :value
+  attr_accessor :load_object_class, :load_object, :value
 
   # Enable single column (association) to contain multiple name/value sets in default form :
   #   Name1:value1, value2|Name2:value1, value2, value3|Name3:value1, value2
@@ -23,16 +30,22 @@ class LoaderBase
   def self.set_multi_value_delim(x) @@multi_value_delim = x; end
   def self.set_multi_assoc_delim(x) @@multi_assoc_delim = x; end
 
-  def initialize(object)
-    @load_object = object
+  def initialize(object_class, object = nil)
+    @load_object_class = object_class
+    @load_object = object || @load_object_class.new
   end
 
+  def reset()
+    @load_object = @load_object_class.new
+  end
+  
   # What process a value string from a column.
   # Assigning value(s) to correct association on @load_object.
   # Method map represents a column from a file and it's correlated AR associations.
   # Value string which may contain multiple values for a collection association.
   # 
   def process(method_map, value)
+    #puts "INFO: LOADER BASE processing #{@load_object}"
     @value = value
     
     if(method_map.has_many && method_map.has_many_class && @value)

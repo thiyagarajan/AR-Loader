@@ -15,7 +15,7 @@ namespace :autotelik do
 
     desc "Populate the DB with images.\nDefault location db/image_seeds, or specify :input=<path> or dir under db/image_seeds with :folder"
     # :dummy => dummy run without actual saving to DB
-    task :image_load, :input, :folder, :dummy, :sku, :skip_if_no_assoc, :skip_if_loaded, :klass, :needs => :environment do |t, args|
+    task :image_load, :input, :folder, :dummy, :sku, :skip_if_no_assoc, :skip_if_loaded, :model, :needs => :environment do |t, args|
 
       require 'image_loader'
 
@@ -29,7 +29,13 @@ namespace :autotelik do
         @image_cache =  File.join(@image_cache, args[:folder]) if(args[:folder])
       end
 
-      klazz = args[:klass] ? Kernal.const_get(args[:klass]) : Product
+      attachment_klazz = Product
+
+      begin
+        attachment_klazz = Kernel.const_get(args[:model]) if(args[:model])
+      rescue NameError
+        attachment_klazz = Product
+      end
 
       image_loader = ImageLoader.new
 
@@ -43,7 +49,7 @@ namespace :autotelik do
           base_name = File.basename(image_name, '.*')
 
           record = nil
-          if(klazz == Product && args[:sku])
+          if(attachment_klazz == Product && args[:sku])
             sku = base_name.slice!(/\w+/)
             sku.strip!
             base_name.strip!
@@ -54,11 +60,11 @@ namespace :autotelik do
               record = record.product   # SKU stored on Variant but we want it's master Product
             else
               puts "Looking for NAME [#{base_name}]"
-              record = klazz.find_by_name(base_name)
+              record = attachment_klazz.find_by_name(base_name)
             end
           else
-            puts "Looking for #{klazz.name} with NAME [#{base_name}]"
-            record = klazz.find_by_name(base_name)
+            puts "Looking for #{attachment_klazz.name} with NAME [#{base_name}]"
+            record = attachment_klazz.find_by_name(base_name)
           end
       
           if(record)
@@ -66,7 +72,7 @@ namespace :autotelik do
             exists = record.images.detect {|i| puts "COMPARE #{i.attachment_file_name} => #{image_name}"; i.attachment_file_name == image_name }
             puts "Found existing attachments [#{exists}]" unless(exists.nil?)
             if(args[:skip_if_loaded] && !exists.nil?)
-              puts "Skipping - Image #{image_name} already loaded for #{klazz}"
+              puts "Skipping - Image #{image_name} already loaded for #{attachment_klazz}"
               next
             end
           else
@@ -76,7 +82,7 @@ namespace :autotelik do
           # Now do actual upload to DB unless we are doing a dummy run,
           # or the Image must have an associated record
           unless(args[:dummy] == 'true' || (args[:skip_if_no_assoc] && record.nil?))
-            image_loader.refresh()
+            image_loader.reset()
             puts "Process Image"
             image_loader.process( image_name, record )
           end

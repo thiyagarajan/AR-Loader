@@ -3,16 +3,14 @@
 # Date ::     Aug 2010
 # License::   MIT ?
 #
-# Details::   Specific over-rides/additions to general loader to
-#             support Spree Products
+# Details::   Specific over-rides/additions to support Spree Products
 #
 require 'loader_base'
 
 class ProductLoader < LoaderBase
 
-  def initialize(product = nil)
-    prod = product || Product.create
-    super( prod )
+  def initialize(klass = Product, product = nil)
+    super( klass, product )
     raise "Failed to create Product for loading" unless @load_object
   end
 
@@ -21,6 +19,7 @@ class ProductLoader < LoaderBase
   # Value string which may contain multiple values for a collection association.
   # Product to assign that value to.
   def process( method_map, value)
+    #puts "INFO: PRODUCT LOADER processing #{@load_object}"
     @value = value
 
     #puts "DEBUG : process #{method_map.inspect} : #{value.inspect}"

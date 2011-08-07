@@ -1,16 +1,22 @@
 §# AR Loader
 
-General Active Record Loader with current focus on support for Spree.
+General Loader for populating database with seed data from various sources.
 
-Maps column headings to attributes and associations.
+Simplifies the specification and loading of data from files into any active record supported database.
 
-Fully extendable via spreadsheet headings - simply add new column to Excel with
-attribute or association name, and loader will attempt to
-find correct association and populate AR object with row data.
+Seamlessly handles loading an active record model's attributes and it's associations, 
+based on reflection against the supplied model - mapping column headings to attributes and associations.
 
-Can handle human read-able forms of column names. For example, given an association on AR model called,
-product_properties, will map from column headings such as 'product_properties',
-'Product Properties', 'product properties'  etc
+Fully extendable via spreadsheet headings - simply add new column to Excel/Open Office spreadsheets with
+attribute or association name, and loader will attempt to find correct association and populate AR object with row data.
+
+Original focus was on support for the Open Source Spree e-commerce project, so includes specific loaders and rake tasks
+for loading Spree Products and associated data such as Product Variants, and images.
+
+Loaders attempt to handle various human read-able forms of column names.
+
+For example, given an association on the model called, product_properties, will successfully load
+from columns with headings such as 'product_properties', 'Product Properties', 'product Properties' etc
 
 ## Installation
 
@@ -23,11 +29,15 @@ of JRuby and deployed to other Rubies, use the following guard.
         gem 'mysql'
     end
 
-Currently not tested AR usage outside a Rails Project but to install the l;atest gem :
+Install the latest gem :
 
     `gem install ar_loader`
 
-To pull the tasks in, add call in your Rakefile to  :
+To use :
+
+    require 'ar_loader'
+
+To pull the tasks in, add call in your Rakefile :
 
     ArLoader::require_tasks
 
@@ -38,10 +48,11 @@ To pull the tasks in, add call in your Rakefile to  :
 
 ## Features
 
-- *Direct Excel support*
+- *Direct Excel file support*
 
-  Includes a wrapper around MS Excel via Apache POI, which
-  enables Products to be loaded directly from Excel via JRuby. No need to save to CSV first.
+  Includes a wrapper around MS Excel File format, via Apache POI, which
+  enables Products to be loaded directly from Excel files (Excel does not need to be installed) via JRuby.
+  No need to save to CSV first.
 
   The java jars e.g - 'poi-3.6.jar' - are included.
 

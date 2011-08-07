@@ -5,6 +5,8 @@
 #
 # Details::   Active Record Loader
 #
+require 'active_record'
+
 module ArLoader
 
   def self.gem_version
@@ -27,7 +29,7 @@ module ArLoader
     # Base search paths - these will be searched recursively and any xxx.rake files autoimported
     loader_paths = []
 
-    loader_libs.each {|lib| loader_paths << File.join(root_path, lib) }
+    loader_libs.each {|l| loader_paths << File.join(root_path(), l) }
 
     # Define require search paths, any dir in here will be added to LOAD_PATH
 
@@ -39,6 +41,17 @@ module ArLoader
         end
       end
     end
+
+    require__libs = %w{ loaders engine }
+
+    require__libs.each do |base|
+      Dir[File.join('lib', base, '*.rb')].each do |rb|
+          unless File.directory? rb
+            require rb
+          end
+      end
+    end
+
   end
 
   def self.require_tasks

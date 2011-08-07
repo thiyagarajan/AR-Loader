@@ -1,24 +1,51 @@
-unless defined? SPREE_ROOT
-  ENV["RAILS_ENV"] = "test"
-  case
-  when ENV["SPREE_ENV_FILE"]
-    require ENV["SPREE_ENV_FILE"]
-  when File.dirname(__FILE__) =~ %r{vendor/SPREE/vendor/extensions}
-    require "#{File.expand_path(File.dirname(__FILE__) + "/../../../../../../")}/config/environment"
-  else
-    require "#{File.expand_path(File.dirname(__FILE__) + "/../../../../")}/config/environment"
-  end
-end
-require "#{SPREE_ROOT}/spec/spec_helper"
+require 'active_support'
+require 'active_record'
 
-if File.directory?(File.dirname(__FILE__) + "/scenarios")
-  Scenario.load_paths.unshift File.dirname(__FILE__) + "/scenarios"
-end
-if File.directory?(File.dirname(__FILE__) + "/matchers")
-  Dir[File.dirname(__FILE__) + "/matchers/*.rb"].each {|file| require file }
+require File.dirname(__FILE__) + '/../lib/ar_loader'
+
+#.# Copyright:: (c) Autotelik Media Ltd 2011
+# Author ::   Tom Statter
+# Date ::     Aug 2011
+# License::   MIT
+#
+# Details::   Spec Helper for Active Record Loader
+#
+#
+# We are not setup as a Rails project so need to mimic an active record database setup so
+# we have some  AR models top test against. Create an in memory database from scratch.
+#
+def db_connect( env = 'test_file')
+
+  # Some active record stuff seems to rely on the RAILS_ENV being set ?
+
+  ENV['RAILS_ENV'] = env
+  
+  configuration = {}
+
+  configuration[:database_configuration] = YAML::load(ERB.new(IO.read( File.dirname(__FILE__) + '/database.yml')).result)
+  db = configuration[:database_configuration][ env ]
+
+  puts "Setting DB Config - #{db.inspect}"
+  ActiveRecord::Base.configurations = db
+
+  #ActiveRecord::Base.logger = Logger.new(STDOUT)
+
+  puts "Connecting to DB"
+  ActiveRecord::Base.establish_connection( db )
+
+  puts "Connected to DB - #{ActiveRecord::Base.connection.inspect}"
 end
 
-Spec::Runner.configure do |config|
+
+def load_in_memory
+  load "#{Rails.root}/db/schema.rb"
+end
+
+def migrate_up
+  ActiveRecord::Migrator.up(  File.dirname(__FILE__) + '/db/migrate')
+end
+
+RSpec.configure do |config|
   # config.use_transactional_fixtures = true
   # config.use_instantiated_fixtures  = false
   # config.fixture_path = RAILS_ROOT + '/spec/fixtures'
