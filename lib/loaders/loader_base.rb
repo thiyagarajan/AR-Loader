@@ -12,7 +12,7 @@
 #
 class LoaderBase
 
-  attr_accessor :load_object_class, :load_object, :value
+  attr_accessor :load_object_class, :load_object, :current_value
 
   # Enable single column (association) to contain multiple name/value sets in default form :
   #   Name1:value1, value2|Name2:value1, value2, value3|Name3:value1, value2
@@ -38,36 +38,40 @@ class LoaderBase
   def reset()
     @load_object = @load_object_class.new
   end
-  
+
+  # Search method mapper for supplied klass and column,
+  # and if suitable association found, process row data into current load_object
+  def find_and_process(klass, column_name, row_data)
+    method_detail = MethodMapper.find_method_detail( klass, column_name )
+
+    process(method_detail, row_data) if method_detail
+  end
+
+
   # What process a value string from a column.
   # Assigning value(s) to correct association on @load_object.
-  # Method map represents a column from a file and it's correlated AR associations.
+  # Method detail represents a column from a file and it's correlated AR associations.
   # Value string which may contain multiple values for a collection association.
   # 
-  def process(method_map, value)
+  def process(method_detail, value)
     #puts "INFO: LOADER BASE processing #{@load_object}"
-    @value = value
+    @current_value = value
     
-    if(method_map.has_many && method_map.has_many_class && @value)
-      # The Generic handler for Associations
-      # The actual class of the association so we can find_or_create on it
-      assoc_class = method_map.has_many_class
+    if(method_detail.has_many)
 
-      puts "Processing Association: #{assoc_class} : #{@value}"
+      if(method_detail.has_many_class && @current_value)
 
-      @value.split(@@multi_assoc_delim).collect do |lookup|
-        # TODO - Don't just rely on 'name' but try different finds as per MethodMappe::insistent_belongs_to ..
-        x = assoc_class.find(:first, :conditions => ['lower(name) LIKE ?', "%#{lookup.downcase}%"])
-        unless x
-          puts "WARNING: #{lookup} in #{assoc_class} NOT found - Not added to #{@load_object.class}"
-          next
+        puts "Processing Association: #{method_detail} : #{@current_value}"
+
+        @current_value.split(@@multi_assoc_delim).collect do |lookup|
+          method_detail.assign(@load_object, @current_value)
         end
-        @load_object.send( method_map.has_many ) << x
+
         @load_object.save
       end
     else
       # Nice n simple straight assignment to a column variable
-      method_map.assign(@load_object, @value) unless method_map.has_many
+      method_detail.assign(@load_object, @current_value)
     end
   end
 

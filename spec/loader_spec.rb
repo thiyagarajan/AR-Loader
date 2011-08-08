@@ -9,78 +9,114 @@ require File.dirname(__FILE__) + '/spec_helper'
 
 require 'erb'
 
-class TestModel < ActiveRecord::Base
-  has_many :TestAssociationModel
-end
-
-class TestAssociationModel < ActiveRecord::Base
-  belongs_to :test_model
-end
-
-describe 'ExcelLoader' do
+describe 'Basic Loader' do
 
   before(:all) do
     db_connect( 'test_file' )    # , test_memory, test_mysql
     migrate_up
     @klazz = TestModel
+    @assoc_klazz = TestAssociationModel
   end
   
   before(:each) do
-    @row = TestModel.create( :value_as_string => 'I am a String', :value_as_text => "I am lots\n of text", :value_as_boolean => true)
-    #:value_as_datetime, :default => nil
-    @klazz = TestModel
+    #@row = TestModel.find_or_create_by_value_as_string( 'I am a String', :value_as_text => "I am lots\n of text", :value_as_boolean => true)
+    #:value_as_datetime)
 
     MethodMapper.clear
     MethodMapper.find_operators( @klazz )
+    MethodMapper.find_operators( @assoc_klazz )
+
   end
   
-  it "should populate operators for a given AR model" do
+  it "should be able to create a new loader and load object" do
+    loader = LoaderBase.new( TestModel)
 
-    MethodMapper.has_many.should_not be_empty
-    MethodMapper.has_many[TestModel].should include('TestAssociationModel')
+    loader.load_object.should_not be_nil
+    loader.load_object.should be_is_a(TestModel)
+    loader.load_object.new_record?.should be_true
+  end
 
-    MethodMapper.assignments.should_not be_empty
-    MethodMapper.assignments[TestModel].should include('id')
-    MethodMapper.assignments[TestModel].should include('value_as_string')
-    MethodMapper.assignments[TestModel].should include('value_as_text')
+  it "should process a string field against an assigment method detail" do
 
-    MethodMapper.belongs_to.should_not be_empty
-    MethodMapper.belongs_to[TestModel].should be_empty
+    loader = LoaderBase.new(TestModel)
 
+    column = 'Value As String'
+    row = 'Another Lazy fox '
 
-    MethodMapper.column_types.should be_is_a(Hash)
-    MethodMapper.column_types.should_not be_empty
-    MethodMapper.column_types[TestModel].size.should == TestModel.columns.size
+    loader.find_and_process(@klazz, column, row)
+
+    loader.load_object.value_as_string.should == row
+  end
+
+  it "should process a text field against an assigment method detail" do
+
+    loader = LoaderBase.new(TestModel)
+
+    column = :value_as_text
+    row = "Another Lazy fox\nJumped over something and bumped,\nHis head"
+
+    loader.find_and_process(@klazz, column, row)
+
+    loader.load_object.value_as_text.should == row
 
   end
 
-  it "should find method details correctly for different forms of a column name" do
+  it "should process a boolean field against an assigment method detail" do
 
-    [:value_as_string, 'value_as_string', "VALUE as_STRING", "value as string"].each do |format|
+    loader = LoaderBase.new(TestModel)
 
-      method_details = MethodMapper.find_method_detail( @klazz, format )
+    column = :value_as_boolean
+    row = true
 
-      method_details.class.should == MethodDetail
+    loader.find_and_process(@klazz, column, row)
 
-      puts method_details.inspect
+    loader.load_object.value_as_boolean.should == row
 
-      method_details.operator.should == 'value_as_string'
-      method_details.assignment.should == 'value_as_string'
-      method_details.operator_for(:assignment).should == 'value_as_string'
+    row = 'false'
 
-      method_details.operator_for(:belongs_to).should be_nil
-      method_details.operator_for(:has_many).should be_nil
+    loader.find_and_process(@klazz, column, row)
 
-      method_details.belongs_to.should be_nil
-      method_details.has_many.should be_nil
+    loader.load_object.value_as_boolean.should == false
 
 
-      method_details.col_type.should_not be_nil
-      method_details.col_type.name.should == 'value_as_string'
-      method_details.col_type.default.should == nil
-      method_details.col_type.sql_type.should include 'varchar(255)'   # db specific, sqlite
-      method_details.col_type.type.should == :string
-    end
+  end
+
+  it "should process a double field against an assigment operator" do
+  end
+
+  it "should process various date formats against a date assigment operator" do
+
+    loader = LoaderBase.new(TestModel)
+
+    column = :value_as_datetime
+
+    loader.find_and_process(@klazz, column, Time.now)
+    loader.load_object.value_as_datetime.should_not be_nil
+
+    loader.find_and_process(@klazz, column, "2011-07-23")
+    loader.load_object.value_as_datetime.should_not be_nil
+
+    loader.find_and_process(@klazz, column, "Sat Jul 23 09:01:56 +0100 2011")
+    loader.load_object.value_as_datetime.should_not be_nil
+
+    loader.find_and_process(@klazz, column,  Time.now.to_s(:db))
+    loader.load_object.value_as_datetime.should_not be_nil
+
+    loader.find_and_process(@klazz, column,  "Jul 23 2011 23:02:59")
+    loader.load_object.value_as_datetime.should_not be_nil
+
+    loader.find_and_process(@klazz, column,  "07/23/2011")    # dd/mm/YYYY
+    loader.load_object.value_as_datetime.should_not be_nil
+
+    # bad casts
+    loader.find_and_process(@klazz, column, "2011 07 23")
+    loader.load_object.value_as_datetime.should be_nil
+
+
+    loader.find_and_process(@klazz, column,  "2011-23-07")
+    loader.load_object.value_as_datetime.should be_nil
+
+    puts loader.load_object.value_as_datetime
   end
 
 end

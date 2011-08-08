@@ -1,5 +1,6 @@
 require 'active_support'
 require 'active_record'
+require 'erb'
 
 require File.dirname(__FILE__) + '/../lib/ar_loader'
 
@@ -14,6 +15,16 @@ require File.dirname(__FILE__) + '/../lib/ar_loader'
 # We are not setup as a Rails project so need to mimic an active record database setup so
 # we have some  AR models top test against. Create an in memory database from scratch.
 #
+
+class TestModel < ActiveRecord::Base
+  has_many :test_association_models
+end
+
+class TestAssociationModel < ActiveRecord::Base
+  belongs_to :test_model
+end
+
+
 def db_connect( env = 'test_file')
 
   # Some active record stuff seems to rely on the RAILS_ENV being set ?
@@ -36,7 +47,7 @@ def db_connect( env = 'test_file')
   require 'logger'
   ActiveRecord::Base.logger = Logger.new(STDOUT)
 
-  puts "Connected to DB - #{ActiveRecord::Base.connection.inspect}"
+  #puts "Connected to DB - #{ActiveRecord::Base.connection.inspect}"
 end
 
 

@@ -84,5 +84,4 @@ module ArLoader
   
 end
 
-puts 'require libs'
 loaded ||= ArLoader::require_libraries

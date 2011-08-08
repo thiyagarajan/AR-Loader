@@ -96,24 +96,30 @@ class MethodMapper
     name = external_name.to_s
 
     # TODO - check out regexp to do this work better plus Inflections ??
-    # Want to be able to handle any of ["Count On hand", 'count_on_hand', "Count OnHand", "COUNT ONHand"]
+    # Want to be able to handle any of ["Count On hand", 'count_on_hand', "Count OnHand", "COUNT ONHand" etc]
     [
       name,
+      name.tableize,
       name.gsub(' ', '_'),
       name.gsub(' ', ''),
       name.gsub(' ', '_').downcase,
       name.gsub(' ', '').downcase,
-      name.gsub(' ', '_').underscore
-    ].each do |n|
-      has_many   = (has_many_for(klass).include?(n))   ?  n : nil
-        break if has_many
-      belongs_to = (belongs_to_for(klass).include?(n)) ?  n : nil
-        break if belongs_to
-      assign     = (assignments_for(klass).include?(n))?  n : nil
-        break if assign
+      name.gsub(' ', '_').underscore].each do |n|
+      
+        assign     = (assignments_for(klass).include?(n))?  n : nil
+          break if assign
+        has_many   = (has_many_for(klass).include?(n))   ?  n : nil
+          break if has_many
+        belongs_to = (belongs_to_for(klass).include?(n)) ?  n : nil
+          break if belongs_to
+
     end
 
-    return MethodDetail.new(klass, name, assign, belongs_to, has_many, @@column_types[klass])
+    if(assign || belongs_to || has_many)
+      return MethodDetail.new(klass, name, assign, belongs_to, has_many, @@column_types[klass])
+    end
+
+    nil
   end
 
   def self.clear

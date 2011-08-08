@@ -3,9 +3,10 @@
 # Date ::     Aug 2011
 # License::   MIT
 #
-# Details::   Spree Loader mixing in Support for testing or loading Rails Spree e-commerce.
-#             Since this gem is not a Rails app or a Spree App provides utilities to internally
-#             create a Spree Database, and to load Spree comonents internally.
+# Details::   Spree Helper mixing in Support for testing or loading Rails Spree e-commerce.
+# 
+#             Since ar_loader gem is not a Rails app or a Spree App, provides utilities to internally
+#             create a Spree Database, and to load Spree components, enabling standalone testing.
 #
 module Spree
 
