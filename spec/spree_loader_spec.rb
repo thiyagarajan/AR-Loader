@@ -10,10 +10,18 @@ describe 'SpreeLoader' do
     db_connect( 'test_file' )    # , test_memory, test_mysql
     Spree.load
     Spree.migrate_up
+
+    @klazz = Product
+
+    # TODO create proper suite of fixtures for Spree testing
+    @prop1 = Property.find_or_create_by_name( 'RSpecTestProperty')
+    @prop2 = Property.find_or_create_by_name( 'AN Other RSpecTestProperty')
+    @prop3 = Property.find_or_create_by_name( 'AN Other RSpecTestProperty')
+
   end
 
   before do
-    @klazz = Product
+
     MethodMapper.clear
     MethodMapper.find_operators( @klazz )
 
@@ -63,14 +71,12 @@ describe 'SpreeLoader' do
 
       method_details = MethodMapper.find_method_detail( @klazz, format )
 
- 
       method_details.operator.should == 'count_on_hand'
       method_details.assignment.should == 'count_on_hand'
       method_details.operator_for(:assignment).should == 'count_on_hand'
 
       method_details.operator_for(:belongs_to).should be_nil
       method_details.operator_for(:has_many).should be_nil
-
 
       method_details.col_type.should_not be_nil
       method_details.col_type.name.should == 'count_on_hand'
@@ -82,13 +88,10 @@ describe 'SpreeLoader' do
 
   it "should populate method details correctly for has_many forms of association name" do
 
-
     MethodMapper.has_many[@klazz].should include('product_option_types')
-
 
     ["product_option_types", "product option types", 'product Option_types', "ProductOptionTypes", "Product_Option_Types"].each do |format|
       method_detail = MethodMapper.find_method_detail( @klazz, format )
-
 
       method_detail.should_not be_nil
 
@@ -132,7 +135,6 @@ describe 'SpreeLoader' do
 
     klazz_object.taxons.size.should == 0
 
-
     # NEW ASSOCIATION ASSIGNMENT
 
     # assign via the send operator directly on load object
@@ -142,6 +144,13 @@ describe 'SpreeLoader' do
 
     klazz_object.send( method_detail.operator ) << [Taxon.new, Taxon.new]
     klazz_object.taxons.size.should == 3
+
+    # Use generic assignment on method detail - expect has_many to use << not =
+    method_detail.assign( klazz_object, Taxon.new )
+    klazz_object.taxons.size.should == 4
+
+    method_detail.assign( klazz_object, [Taxon.new, Taxon.new])
+    klazz_object.taxons.size.should == 6
   end
 
   it "should enable assignment to has_many association using existing objects" do
@@ -157,12 +166,7 @@ describe 'SpreeLoader' do
 
     klazz_object = @klazz.new
 
-    p1 = Property.find_or_create_by_name( 'RSpecTestProperty')
-    p2 = Property.find_or_create_by_name( 'AN Other RSpecTestProperty')
-    p3 = Property.find_or_create_by_name( 'AN Other RSpecTestProperty')
-
-    ProductProperty.new(:property => p1)
-
+    ProductProperty.new(:property => @prop1)
 
     # NEW ASSOCIATION ASSIGNMENT
     klazz_object.send( method_detail.operator ) << ProductProperty.new
@@ -172,14 +176,12 @@ describe 'SpreeLoader' do
     klazz_object.send( method_detail.operator ) << [ProductProperty.new, ProductProperty.new]
     klazz_object.product_properties.size.should == 3
 
-
     # Use generic assignment on method detail - expect has_many to use << not =
-    method_detail.assign( klazz_object, ProductProperty.new(:property => p1) )
-
+    method_detail.assign( klazz_object, ProductProperty.new(:property => @prop1) )
     klazz_object.product_properties.size.should == 4
 
-    method_detail.assign( klazz_object, [ProductProperty.new(:property => p2), ProductProperty.new(:property => p3)])
-    klazz_object.product_properties.size.should == 7
+    method_detail.assign( klazz_object, [ProductProperty.new(:property => @prop2), ProductProperty.new(:property => @prop3)])
+    klazz_object.product_properties.size.should == 6
 
   end
 

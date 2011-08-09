@@ -3,13 +3,13 @@
 # Date ::     Aug 2010
 # License::   MIT
 #
-# Details::   This class provides information and access to the individual methods
+# Details::   This class provides info and access to the individual population methods
 #             on an AR model. Populated by, and coupled with MethodMapper,
-#             which does the model interrogation work.
+#             which does the model interrogation work and stores sets of MethodDetails.
+#
 #             Enables 'loaders' to iterate over the MethodMapper results set,
 #             and assign values to AR object, without knowing anything about that receiving object.
 #
-# =>
 require 'to_b'
 
 class MethodDetail
@@ -117,6 +117,9 @@ class MethodDetail
   end
 
   def assign( record, value )
+
+    value.each {|v| assign(record, v) } if(value.is_a?(Array))
+
     #puts "DEBUG: assign: [#{@name}]"
 
     @current_value = validate_value(value)
