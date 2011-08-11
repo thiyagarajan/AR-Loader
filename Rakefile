@@ -21,7 +21,7 @@ require "lib/ar_loader"
 #
 #             TODO - Switch for non JRuby Rubies, enable load via CSV file instead of Excel.
 #
-ArLoader::require_tasks
+ArLoader::load_tasks
 
 spec = Gem::Specification.new do |s|
   s.name = ArLoader.gem_name

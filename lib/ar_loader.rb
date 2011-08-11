@@ -75,7 +75,7 @@ module ArLoader
 
   end
 
-  def self.require_tasks
+  def self.load_tasks
     # Long parameter lists so ensure rake -T produces nice wide output
     ENV['RAKE_COLUMNS'] = '180'
     base = File.join(root_path, 'tasks', '**')

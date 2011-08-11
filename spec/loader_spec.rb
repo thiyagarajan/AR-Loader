@@ -3,7 +3,7 @@
 # Date ::     Aug 2011
 # License::   MIT
 #
-# Details::   Specs for Excel aspect of Active Record Loader
+# Details::   Specs for base class Loader
 #
 require File.dirname(__FILE__) + '/spec_helper'
 

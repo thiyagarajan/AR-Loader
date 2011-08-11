@@ -1,12 +1,11 @@
 # Copyright:: (c) Autotelik Media Ltd 2011
 # Author ::   Tom Statter
 # Date ::     Feb 2011
-# License::   MIT. Free, Open Source.
+# License::   MIT
 #
-# Usage::     rake autotelik:file_rename input=/blah image_load input=path_to_images
+# Usage::     rake ar_loader:file_rename input=/blah image_load input=path_to_images
 #
-
-namespace :autotelik do
+namespace :ar_loader do
 
   desc "copy or mv a folder of files, consistently renaming in the process"
   task :file_rename, :input, :offset, :prefix, :width, :commit, :mv do |t, args|

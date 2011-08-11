@@ -60,6 +60,8 @@ def migrate_up
 end
 
 
+$fixture_path = File.join(File.dirname(__FILE__), 'fixtures')
+
 RSpec.configure do |config|
   # config.use_transactional_fixtures = true
   # config.use_instantiated_fixtures  = false

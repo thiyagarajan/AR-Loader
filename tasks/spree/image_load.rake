@@ -1,21 +1,22 @@
 # Copyright:: (c) Autotelik Media Ltd 2011
 # Author ::   Tom Statter
 # Date ::     Feb 2011
-# License::   MIT. Free, Open Source.
+# License::   MIT
 #
-# Usage from rake : rake image_load input=path_to_images
+# Usage::
 #
-# => rake image_load input=vendor\extensions\autotelik\fixtures\
-# => rake image_load input="C:\images\photos large' dummy=true
-# => rake image_load input="C:\images\taxon_icons" skip_if_no_assoc=true klass=Taxon
-
-namespace :autotelik do
+# => rake ar_loader:spree:images input=vendor/extensions/site/fixtures/images
+# => rake ar_loader:spree:images input=C:\images\photos large dummy=true
+#
+# => rake ar_loader:spree:images input=C:\images\taxon_icons skip_if_no_assoc=true klass=Taxon
+#
+namespace :ar_loader do
 
   namespace :spree do
 
     desc "Populate the DB with images.\nDefault location db/image_seeds, or specify :input=<path> or dir under db/image_seeds with :folder"
     # :dummy => dummy run without actual saving to DB
-    task :image_load, :input, :folder, :dummy, :sku, :skip_if_no_assoc, :skip_if_loaded, :model, :needs => :environment do |t, args|
+    task :images, :input, :folder, :dummy, :sku, :skip_if_no_assoc, :skip_if_loaded, :model, :needs => :environment do |t, args|
 
       require 'image_loader'
 

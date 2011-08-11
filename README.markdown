@@ -1,35 +1,34 @@
-§# AR Loader
+## AR Loader
 
-General Loader for populating database with seed data from various sources.
+General active record loader for populating database with seed data from various sources,
+including csv files and .xls files (Excel Spreadsheets)
 
-Simplifies the specification and loading of data from files into any active record supported database.
+Simplifies the specification and loading of data from such files into any active record supported database.
 
-Seamlessly handles loading an active record model's attributes and it's associations, 
-based on reflection against the supplied model - mapping column headings to attributes and associations.
+Aims to generically and seamlessly, handle loading an active record model's attributes and it's associations,
+based on reflection against the supplied model.
 
-Fully extendable via spreadsheet headings - simply add new column to Excel/Open Office spreadsheets with
+So rather than hard coded mappings, uses the file's column headings to map data to model's attributes and associations,
+which makes it extendable via file data rather than requiring new coding.
+
+Simply add new column to Excel/Open Office spreadsheet, or csv file with new
 attribute or association name, and loader will attempt to find correct association and populate AR object with row data.
 
-Original focus was on support for the Open Source Spree e-commerce project, so includes specific loaders and rake tasks
-for loading Spree Products and associated data such as Product Variants, and images.
-
-Loaders attempt to handle various human read-able forms of column names.
+The Loader attempts to handle various human read-able forms of column names.
 
 For example, given an association on the model called, product_properties, will successfully load
-from columns with headings such as 'product_properties', 'Product Properties', 'product Properties' etc
+from columns with headings such as 'product_properties', 'Product Properties', 'ProductProperties' 'product properties' etc
+
+For has_many associations, either multiple columns can be used or multiple values can be specified in a single column using suitable delimiters.
+
+Complex associations/mappings, for example requiring complex lookups, can be handled by extending the loader engine.
+
+Original focus was on support for the Open Source Spree e-commerce project, so includes specific loaders and rake tasks
+for loading Spree Products, and associated data such as Product Variants, and Images.
 
 ## Installation
 
-Add gem instruction to your Gemfile. To use the Excel loader, JRuby is required, so to use in a mixed setup
-of JRuby and deployed to other Rubies, use the following guard.
-
-    if(RUBY_PLATFORM =~ /java/)
-         gem 'activerecord-jdbcmysql-adapter'
-    else
-        gem 'mysql'
-    end
-
-Install the latest gem :
+Add gem 'ar_loader' to your Gemfile/bundle, or install the latest gem as usual :
 
     `gem install ar_loader`
 
@@ -39,7 +38,18 @@ To use :
 
 To pull the tasks in, add call in your Rakefile :
 
-    ArLoader::require_tasks
+    ArLoader::load_tasks
+
+N.B - To use the Excel loader, Excel itself is NOT required, however
+JRuby is required, since it uses Java's Apache POI under the hood to process file.
+
+To use in a mixed Ruby setup, you can use a guard something like :
+
+    if(RUBY_PLATFORM =~ /java/)
+         gem 'activerecord-jdbcmysql-adapter'
+    else
+        gem 'mysql'
+    end
 
 ## Example Spreadsheet
 

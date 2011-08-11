@@ -5,104 +5,113 @@
 #
 # REQUIRES:   JRuby access to Java
 #
-# Usage from rake : jruby -S rake excel_loader input=<file.xls>
+# Usage::
 #
-# e.g.  => jruby -S rake autotelik:product_load input=vendor\extensions\autotelik\fixtures\ExampleInfoWeb.xls
-#       => jruby -S rake autotelik:product_load input=C:\MyProducts.xls verbose=true
+# e.g.  => jruby -S rake ar_loader:spree:products input=vendor/extensions/autotelik/fixtures/SiteSpreadsheetInfo.xls
+#       => jruby -S rake ar_loader:spree:products input=C:\MyProducts.xls verbose=true
 #
-namespace :autotelik do
+namespace :ar_loader do
 
-  desc "Populate Spree db with Product/Varient data from .xls (Excel) file"
-  task :product_load, :input, :verbose, :sku_prefix, :needs => :environment do |t, args|
+  namespace :spree do
 
-    raise "USAGE: jruby -S rake product_load input=excel_file.xls" unless args[:input]
-    raise "ERROR: Could not find file #{args[:input]}" unless File.exists?(args[:input])
+    desc "Populate Spree db with Product/Varient data from .xls (Excel) file"
+    task :products, :input, :verbose, :sku_prefix, :needs => :environment do |t, args|
 
-    require 'product_loader'
-    require 'method_mapper_excel'
+      raise "USAGE: jruby -S rake product_load input=excel_file.xls" unless args[:input]
+      raise "ERROR: Could not find file #{args[:input]}" unless File.exists?(args[:input])
 
-    @method_mapper = MethodMapperExcel.new(args[:input], Product)
+      require 'product_loader'
+      require 'method_mapper_excel'
 
-    @excel = @method_mapper.excel
+      @method_mapper = MethodMapperExcel.new(args[:input], Product)
 
-    if(args[:verbose])
-      puts "Loading from Excel file: #{args[:input]}"
-      puts "Processing #{@excel.num_rows} rows"
-    end
+      @excel = @method_mapper.excel
 
-    # REQUIRED 'set' methods on Product i.e will not validate/save without these
-    required_methods = ['sku', 'name', 'price']
+      if(args[:verbose])
+        puts "Loading from Excel file: #{args[:input]}"
+        puts "Processing #{@excel.num_rows} rows"
+      end
 
-    @method_mapper.check_mandatory( required_methods )
+      # REQUIRED 'set' methods on Product i.e will not validate/save without these
+      required_methods = ['sku', 'name', 'price']
 
-    # COLUMNS WITH DEFAULTS - TODO create YAML configuration file to drive defaults etc
+
+      missing = @method_mapper.check_mandatory( required_methods )
+
+      puts ""
+      if(missing.empty?) 
+        missing.each { |e| puts "ERROR: Mandatory column missing - need a '#{x}' column" }
+        raise "Bad File Description - Mandatory columns missing  - please fix and retry."
+      end
+
+      # COLUMNS WITH DEFAULTS - TODO create YAML configuration file to drive defaults etc
   
-    MethodDetail.set_default_value('available_on', Time.now.to_s(:db) )
-    MethodDetail.set_default_value('cost_price', 0.0 )
+      MethodDetail.set_default_value('available_on', Time.now.to_s(:db) )
+      MethodDetail.set_default_value('cost_price', 0.0 )
 
-    MethodDetail.set_prefix('sku', args[:sku_prefix] ) if args[:sku_prefix]
+      MethodDetail.set_prefix('sku', args[:sku_prefix] ) if args[:sku_prefix]
 
-    # Process spreadsheet and create Products
-    method_names = @method_mapper.method_names
+      # Process spreadsheet and create Products
+      method_names = @method_mapper.method_names
 
-    sku_index = method_names.index('sku')
+      sku_index = method_names.index('sku')
 
-    Product.transaction do
-      @products =  []
+      Product.transaction do
+        @products =  []
 
-      (1..@excel.num_rows).collect do |row|
+        (1..@excel.num_rows).collect do |row|
 
-        product_data_row = @excel.sheet.getRow(row)
-        break if product_data_row.nil?
+          product_data_row = @excel.sheet.getRow(row)
+          break if product_data_row.nil?
 
-        # Excel num_rows seems to return all 'visible' rows so,
-        # we have to manually detect when actual data ends and all the empty rows start
-        contains_data = required_methods.find { |mthd| ! product_data_row.getCell(method_names.index(mthd)).to_s.empty? }
-        break unless contains_data
+          # Excel num_rows seems to return all 'visible' rows so,
+          # we have to manually detect when actual data ends and all the empty rows start
+          contains_data = required_methods.find { |mthd| ! product_data_row.getCell(method_names.index(mthd)).to_s.empty? }
+          break unless contains_data
  
-        @assoc_classes = {}
+          @assoc_classes = {}
 
-        loader = ProductLoader.new()
+          loader = ProductLoader.new()
 
-        # TODO - Smart sorting of column processing order ....
-        # Does not currently ensure mandatory columns (for valid?) processed first but Product needs saving
-        # before associations can be processed so user should ensure SKU, name, price columns are among first columns
+          # TODO - Smart sorting of column processing order ....
+          # Does not currently ensure mandatory columns (for valid?) processed first but Product needs saving
+          # before associations can be processed so user should ensure SKU, name, price columns are among first columns
 
-        @method_mapper.methods.each_with_index do |method_map, col|
-          product_data_row.getCell(col).setCellType(JExcelFile::HSSFCell::CELL_TYPE_STRING) if(col == sku_index)
-          loader.process(method_map, @excel.value(product_data_row, col))
-          begin
-            prod = loader.load_object
-            if( prod.valid? && prod.new_record? )
-              prod.save
+          @method_mapper.methods.each_with_index do |method_map, col|
+            product_data_row.getCell(col).setCellType(JExcelFile::HSSFCell::CELL_TYPE_STRING) if(col == sku_index)
+            loader.process(method_map, @excel.value(product_data_row, col))
+            begin
+              prod = loader.load_object
+              if( prod.valid? && prod.new_record? )
+                prod.save
+              end
+            rescue => e
+              puts "ERROR: Product save #{e.inspect}"
+              raise "Error processing Product"
             end
-          rescue => e
-            puts "ERROR: Product save #{e.inspect}"
-            raise "Error processing Product"
+          end
+
+          product = loader.load_object
+
+          product.available_on ||= Time.now.to_s(:db)
+
+          # TODO - handle when it's not valid ?
+          # Process rest and dump out an exception list of Products
+          #unless(product.valid?)
+          #end
+
+          puts "SAVING ROW #{row} : #{product.inspect}" if args[:verbose]
+
+          unless(product.save)
+            puts product.errors.inspect
+            puts product.errors.full_messages.inspect
+            raise "Error Saving Product: #{product.sku} :#{product.name}"
+          else
+            @products << product
           end
         end
+      end   # TRANSACTION
 
-        product = loader.load_object
-
-        product.available_on ||= Time.now.to_s(:db)
-
-        # TODO - handle when it's not valid ? 
-        # Process rest and dump out an exception list of Products
-        #unless(product.valid?)
-        #end
-
-        puts "SAVING ROW #{row} : #{product.inspect}" if args[:verbose]
-
-        unless(product.save)
-          puts product.errors.inspect
-          puts product.errors.full_messages.inspect
-          raise "Error Saving Product: #{product.sku} :#{product.name}"
-        else
-          @products << product
-        end
-      end
-    end   # TRANSACTION
-
+    end
   end
-
 end

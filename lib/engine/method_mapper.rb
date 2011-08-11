@@ -38,6 +38,7 @@ class MethodMapper
   
   def find_method_details( klass, method_list )
     @methods = method_list.collect { |x| MethodMapper::find_method_detail( klass, x ) }
+    @methods.compact!
   end
 
   def method_names()
@@ -47,7 +48,7 @@ class MethodMapper
   def check_mandatory( mandatory_list )
     method_list = method_names()
 
-    mandatory_list.each { |x| raise "Mandatory column missing - need a '#{x}' column" unless(method_list.index(x)) }
+    mandatory_list.select { |x| x unless(method_list.index(x)) }
   end
 
   # Create picture of the operators for assignment available on an AR model,
@@ -88,7 +89,7 @@ class MethodMapper
   # Find the proper format of name, appropriate call + column type for a given name.
   # e.g Given users entry in spread sheet check for pluralization, missing underscores etc
   #
-  # If not nil returned method can be used directly in for example klass.new.send( call, .... )
+  # If not nil, returned method can be used directly in for example klass.new.send( call, .... )
   #
   def self.find_method_detail( klass, external_name )
     assign, belongs_to, has_many = nil, nil, nil

@@ -1,19 +1,88 @@
-# Copyright:: (c) Autotelik Media Ltd 2010
+# Copyright:: (c) Autotelik Media Ltd 2011
 # Author ::   Tom Statter
-# Date ::     Aug 2010
-# License::   MIT ?
+# Date ::     Aug 2011
+# License::   MIT
 #
-# Details::   Specific over-rides/additions to support Spree Products
+# Details::   Specific loader to support Excel files.
+#             Note this only requires JRuby, Excel not required, or Win OLE
 #
 require 'loader_base'
-require 'product'
+require 'method_mapper_excel'
 
-class ProductLoader < LoaderBase
+class ExcelLoader < LoaderBase
 
-  def initialize(klass = Product, product = nil)
-    super( klass, product )
-    raise "Failed to create Product for loading" unless @load_object
+  def initialize(klass, object = nil)
+    super( klass, object )
+    raise "Cannot load - failed to create a #{klass}" unless @load_object
   end
+
+  def load( input, options = {} )
+
+    @method_mapper = MethodMapperExcel.new(input, load_object_class)
+
+    #if(options[:verbose])
+    puts "Loading from Excel file: #input}"
+    puts "Processing #{@method_mapper.num_rows} rows"
+    # end
+
+    load_object_class.transaction do
+      @loaded_objects =  []
+
+      (1..@method_mapper.num_rows).collect do |row|
+
+        # Excel num_rows returns all 'visible' rows so,
+        # we have to manually detect when actual data ends, this isn't very smart but
+        # currently got no better idea than ending once we hit the first completely empty row
+        break if @method_mapper.excel.sheet.getRow(row).nil?
+
+        contains_data = false
+
+        # TODO - Smart sorting of column processing order ....
+        # Does not currently ensure mandatory columns (for valid?) processed first but model needs saving
+        # before associations can be processed so user should ensure mandatory columns are prior to associations
+
+        # Iterate over the columns method_mapper found in Excel,
+        # pulling data out of associated column
+        @method_mapper.methods.each_with_index do |method_detail, col|
+
+          value = @method_mapper.value(row, col)
+
+          contains_data = true if(value.to_s.empty?)
+
+          puts "METHOD #{method_detail.class} #{method_detail.inspect}"
+          puts "VALUE #{value} #{value.inspect}"
+
+          process(method_detail, value)
+
+          begin
+            load_object.save if( load_object.valid? && load_object.new_record? )
+          rescue
+            raise "Error processing row"
+          end
+        end
+
+        break unless contains_data
+
+        loaded_object = load_object()
+
+        # TODO - handle when it's not valid ?
+        # Process rest and dump out an exception list of Products
+        #unless(product.valid?)
+        #end
+
+        puts "SAVING ROW #{row} : #{loaded_object.inspect}" if args[:verbose]
+
+        unless(loaded_object.save)
+          puts loaded_object.errors.inspect
+          puts loaded_object.errors.full_messages.inspect
+          raise "Error Saving : #{loaded_object.inspect}"
+        else
+          @loaded_objects << loaded_object
+        end
+      end
+    end
+  end
+
 
   # What process a value string from a column, assigning value(s) to correct association on Product.
   # Method map represents a column from a file and it's correlated Product association.
@@ -57,10 +126,10 @@ class ProductLoader < LoaderBase
         end
       end
 
-    # Special case for ProductProperties since it can have additional value applied.
-    # A list of Properties with a optional Value - supplied in form :
-    #   Property:value|Property2:value|Property3:value
-    #
+      # Special case for ProductProperties since it can have additional value applied.
+      # A list of Properties with a optional Value - supplied in form :
+      #   Property:value|Property2:value|Property3:value
+      #
     elsif(method_map.name == 'product_properties' && @value)
 
       property_list = @value.split(@@multi_assoc_delim)

@@ -20,7 +20,7 @@
 #
 require 'erb'
 
-namespace :autotelik do
+namespace :ar_loader do
 
   desc "Convert MS Word to HTML and seed_fu fixtures. help=true for detailed usage."
 
@@ -36,7 +36,7 @@ namespace :autotelik do
 
       Examples:
         # default, to convert all Word files for the current environment
-        rake autotelik:word2seedfu
+        rake ar_loader:word2seedfu
 
         # to load seed files matching orders or customers
         rake db:seed SEED=orders,customers

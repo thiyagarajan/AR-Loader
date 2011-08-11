@@ -41,4 +41,13 @@ class MethodMapperExcel < MethodMapper
     # Convert the list of headers into suitable calls on the Active Record class
     find_method_details( klass, @headers )
   end
+
+
+  def value( row, column)
+    @excel.value( @excel.sheet.getRow(row), column)
+  end
+
+  def num_rows
+    @excel.num_rows
+  end
 end

@@ -12,7 +12,10 @@
 #
 class LoaderBase
 
-  attr_accessor :load_object_class, :load_object, :current_value
+  attr_accessor :load_object_class, :load_object
+  attr_accessor :current_value
+
+  attr_accessor :loaded_objects
 
   # Enable single column (association) to contain multiple name/value sets in default form :
   #   Name1:value1, value2|Name2:value1, value2, value3|Name3:value1, value2
