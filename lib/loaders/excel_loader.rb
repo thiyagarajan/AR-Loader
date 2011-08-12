@@ -30,8 +30,10 @@ class ExcelLoader < LoaderBase
 
       (1..@method_mapper.num_rows).collect do |row|
 
-        # Excel num_rows returns all 'visible' rows so,
-        # we have to manually detect when actual data ends, this isn't very smart but
+        # Excel num_rows seems to return all 'visible' rows, which appears to be greater than the actual data rows
+        # (TODO - write spec to process .xls with a huge number of rows)
+        #
+        # So currently we have to manually detect when actual data ends, this isn't very smart but
         # currently got no better idea than ending once we hit the first completely empty row
         break if @method_mapper.excel.sheet.getRow(row).nil?
 
@@ -47,38 +49,40 @@ class ExcelLoader < LoaderBase
 
           value = @method_mapper.value(row, col)
 
-          contains_data = true if(value.to_s.empty?)
+          contains_data = true unless(value.nil? || value.to_s.empty?)
 
-          puts "METHOD #{method_detail.class} #{method_detail.inspect}"
-          puts "VALUE #{value} #{value.inspect}"
+          puts "METHOD #{method_detail.inspect}"
+          puts "VALUE  #{value.inspect}"
 
           process(method_detail, value)
 
+          # i think there may be times when we want to save early, for associations
+          # or other code that may be triggered
           begin
             load_object.save if( load_object.valid? && load_object.new_record? )
           rescue
-            raise "Error processing row"
-          end
+            raise "Error processing row #{row} - early Save failed"
+          end if (options[:commit_early])
         end
 
+        puts "contains_data  #{contains_data.inspect}"
         break unless contains_data
 
-        loaded_object = load_object()
-
         # TODO - handle when it's not valid ?
-        # Process rest and dump out an exception list of Products
-        #unless(product.valid?)
-        #end
+        # Process rest and dump out an exception list of Products ??
 
-        puts "SAVING ROW #{row} : #{loaded_object.inspect}" if args[:verbose]
-
-        unless(loaded_object.save)
-          puts loaded_object.errors.inspect
-          puts loaded_object.errors.full_messages.inspect
-          raise "Error Saving : #{loaded_object.inspect}"
+        puts "SAVING ROW #{row} : #{load_object.inspect}" #if options[:verbose]
+        if( load_object.valid? && load_object.save)
+          @loaded_objects << load_object
         else
-          @loaded_objects << loaded_object
+          puts load_object.errors.inspect
+          puts load_object.errors.full_messages.inspect
+          raise "Error processing row #{row} - Save failed : #{load_object.inspect}"
         end
+
+        # don't forget to reset the object or we'll update rather than create
+        new_load_object
+        
       end
     end
   end

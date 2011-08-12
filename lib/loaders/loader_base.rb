@@ -35,13 +35,22 @@ class LoaderBase
 
   def initialize(object_class, object = nil)
     @load_object_class = object_class
-    @load_object = object || @load_object_class.new
+    @load_object = object || new_load_object
+    @loaded_count = 0
   end
 
-  def reset()
+  def new_load_object
     @load_object = @load_object_class.new
   end
 
+  def reset()
+    new_load_object
+    @loaded_objects.clear
+  end
+
+  def loaded_count
+    @loaded_objects.size
+  end
   # Search method mapper for supplied klass and column,
   # and if suitable association found, process row data into current load_object
   def find_and_process(klass, column_name, row_data)
@@ -70,7 +79,11 @@ class LoaderBase
           method_detail.assign(@load_object, @current_value)
         end
 
-        @load_object.save
+        begin
+          @load_object.save if( load_object.valid? )
+        rescue
+          raise "Error processing #{method_detail.name}"
+        end
       end
     else
       # Nice n simple straight assignment to a column variable
