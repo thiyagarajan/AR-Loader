@@ -4,163 +4,126 @@
 # License::   MIT
 #
 # Details::   Specific loader to support Excel files.
-#             Note this only requires JRuby, Excel not required, or Win OLE
+#             Note this only requires JRuby, Excel not required, nor Win OLE
 #
-require 'loader_base'
-require 'method_mapper_excel'
+require 'ar_loader/exceptions'
 
-class ExcelLoader < LoaderBase
+if(Guards::jruby?)
+  
+  require 'loader_base'
+  require 'method_mapper'
 
-  def initialize(klass, object = nil)
-    super( klass, object )
-    raise "Cannot load - failed to create a #{klass}" unless @load_object
-  end
+  require 'java'
+  require 'jexcel_file'
 
-  def load( input, options = {} )
+  class ExcelLoader < LoaderBase
 
-    @method_mapper = MethodMapperExcel.new(input, load_object_class)
-
-    #if(options[:verbose])
-    puts "Loading from Excel file: #input}"
-    puts "Processing #{@method_mapper.num_rows} rows"
-    # end
-
-    load_object_class.transaction do
-      @loaded_objects =  []
-
-      (1..@method_mapper.num_rows).collect do |row|
-
-        # Excel num_rows seems to return all 'visible' rows, which appears to be greater than the actual data rows
-        # (TODO - write spec to process .xls with a huge number of rows)
-        #
-        # So currently we have to manually detect when actual data ends, this isn't very smart but
-        # currently got no better idea than ending once we hit the first completely empty row
-        break if @method_mapper.excel.sheet.getRow(row).nil?
-
-        contains_data = false
-
-        # TODO - Smart sorting of column processing order ....
-        # Does not currently ensure mandatory columns (for valid?) processed first but model needs saving
-        # before associations can be processed so user should ensure mandatory columns are prior to associations
-
-        # Iterate over the columns method_mapper found in Excel,
-        # pulling data out of associated column
-        @method_mapper.methods.each_with_index do |method_detail, col|
-
-          value = @method_mapper.value(row, col)
-
-          contains_data = true unless(value.nil? || value.to_s.empty?)
-
-          puts "METHOD #{method_detail.inspect}"
-          puts "VALUE  #{value.inspect}"
-
-          process(method_detail, value)
-
-          # i think there may be times when we want to save early, for associations
-          # or other code that may be triggered
-          begin
-            load_object.save if( load_object.valid? && load_object.new_record? )
-          rescue
-            raise "Error processing row #{row} - early Save failed"
-          end if (options[:commit_early])
-        end
-
-        puts "contains_data  #{contains_data.inspect}"
-        break unless contains_data
-
-        # TODO - handle when it's not valid ?
-        # Process rest and dump out an exception list of Products ??
-
-        puts "SAVING ROW #{row} : #{load_object.inspect}" #if options[:verbose]
-        if( load_object.valid? && load_object.save)
-          @loaded_objects << load_object
-        else
-          puts load_object.errors.inspect
-          puts load_object.errors.full_messages.inspect
-          raise "Error processing row #{row} - Save failed : #{load_object.inspect}"
-        end
-
-        # don't forget to reset the object or we'll update rather than create
-        new_load_object
-        
-      end
+    attr_reader :headers
+  
+    def initialize(klass, object = nil, options = {})
+      super( klass, object, options )
+      raise "Cannot load - failed to create a #{klass}" unless @load_object
     end
-  end
 
+    def load( file_name, options = {} )
 
-  # What process a value string from a column, assigning value(s) to correct association on Product.
-  # Method map represents a column from a file and it's correlated Product association.
-  # Value string which may contain multiple values for a collection association.
-  # Product to assign that value to.
-  def process( method_map, value)
-    #puts "INFO: PRODUCT LOADER processing #{@load_object}"
-    @value = value
+      @excel = JExcelFile.new
 
-    #puts "DEBUG : process #{method_map.inspect} : #{value.inspect}"
-    # Special case for OptionTypes as it's two stage process
-    # First add the possible option_types to Product, then we are able
-    # to define Variants on those options.
-    
-    if(method_map.name == 'option_types' && @value)
+      @excel.open(file_name)
 
-      option_types = @value.split(@@multi_assoc_delim)
-      option_types.each do |ostr|
-        oname, value_str = ostr.split(@@name_value_delim)
-        option_type = OptionType.find_or_create_by_name(oname)
-        unless option_type
-          puts "WARNING: OptionType #{oname} NOT found - Not set Product"
-          next
-        end
+      sheet_number = options[:sheet_number] || 0
 
-        @load_object.option_types << option_type unless @load_object.option_types.include?(option_type)
+      @sheet = @excel.sheet( sheet_number )
 
-        # Now get the value(s) for the option e.g red,blue,green for OptType 'colour'
-        ovalues = value_str.split(',')
-        ovalues.each_with_index do |ovname, i|
-          ovname.strip!
-          ov = OptionValue.find_by_name(ovname)
-          if ov
-            object = Variant.new( :sku => "#{@load_object.sku}_#{i}", :price => @load_object.price, :available_on => @load_object.available_on)
-            #puts "DEBUG: Create New Variant: #{object.inspect}"
-            object.option_values << ov
-            @load_object.variants << object
-          else
-            puts "WARNING: Option #{ovname} NOT FOUND - No Variant created"
+      header_row =  options[:header_row] || 0
+      @header_row = @sheet.getRow(header_row)
+
+      raise "ERROR: No headers found - Check Sheet #{@sheet} is completed sheet and Row 1 contains headers" unless @header_row
+
+      @headers = []
+      (0..JExcelFile::MAX_COLUMNS).each do |i|
+        cell = @header_row.getCell(i)
+        break unless cell
+        @headers << "#{@excel.cell_value(cell).to_s}".strip
+      end
+
+      # Gather list of all possible 'setter' methods on AR class (instance variables and associations)
+      MethodMapper.find_operators( load_object_class )
+
+      @method_mapper = MethodMapper.new
+
+      # Convert the list of headers into suitable calls on the Active Record class
+      @method_mapper.find_all_method_details( load_object_class, @headers )
+
+      unless(@method_mapper.missing_methods.empty?)
+        raise MappingDefinitionError, "ERROR: Missing mappings for column headings #{@method_mapper.missing_methods.inspect}"
+      end
+
+      #if(options[:verbose])
+      puts "\n\n\nLoading from Excel file: #{file_name}"
+      puts "Processing #{@excel.num_rows} rows"
+      # end
+
+      load_object_class.transaction do
+        @loaded_objects =  []
+
+        (1..@excel.num_rows).collect do |row|
+
+          # Excel num_rows seems to return all 'visible' rows, which appears to be greater than the actual data rows
+          # (TODO - write spec to process .xls with a huge number of rows)
+          #
+          # So currently we have to manually detect when actual data ends, this isn't very smart but
+          # currently got no better idea than ending once we hit the first completely empty row
+          break if @excel.sheet.getRow(row).nil?
+
+          contains_data = false
+
+          # TODO - Smart sorting of column processing order ....
+          # Does not currently ensure mandatory columns (for valid?) processed first but model needs saving
+          # before associations can be processed so user should ensure mandatory columns are prior to associations
+
+          # as part of this we also attempt to save early, for example before assigning to
+          # has_and_belongs_to associations which require the load_object has an id for the join table
+
+          # Iterate over the columns method_mapper found in Excel,
+          # pulling data out of associated column
+          @method_mapper.methods.each_with_index do |method_detail, col|
+
+            value = value_at(row, col)
+
+            contains_data = true unless(value.nil? || value.to_s.empty?)
+
+            #puts "METHOD #{method_detail.inspect}"
+            #puts "VALUE  #{value.inspect}"
+
+            process(method_detail, value)
           end
+
+          break unless contains_data
+
+          # TODO - handle when it's not valid ?
+          # Process rest and dump out an exception list of Products ??
+
+          puts "SAVING ROW #{row} : #{load_object.inspect}" #if options[:verbose]
+          if( load_object.valid? && load_object.save)
+            @loaded_objects << load_object
+          else
+            @failed_objects << load_object
+            puts load_object.errors.inspect
+            puts load_object.errors.full_messages.inspect
+            raise "Error processing row #{row} - Save failed : #{load_object.inspect}"
+          end
+
+          # don't forget to reset the object or we'll update rather than create
+          new_load_object
+        
         end
       end
-
-      # Special case for ProductProperties since it can have additional value applied.
-      # A list of Properties with a optional Value - supplied in form :
-      #   Property:value|Property2:value|Property3:value
-      #
-    elsif(method_map.name == 'product_properties' && @value)
-
-      property_list = @value.split(@@multi_assoc_delim)
-
-      property_list.each do |pstr|
-        pname, pvalue = pstr.split(@@name_value_delim)
-        property = Property.find_by_name(pname)
-        unless property
-          puts "WARNING: Property #{pname} NOT found - Not set Product"
-          next
-        end
-        @load_object.product_properties << ProductProperty.create( :property => property, :value => pvalue)
-      end
-
-    elsif(method_map.name == 'count_on_hand' && @load_object.variants.size > 0 &&
-          @value.is_a?(String) && @value.include?(@@multi_assoc_delim))
-      # Check if we processed Option Types and assign count per option
-      values = @value.split(@@multi_assoc_delim)
-      if(@load_object.variants.size == values.size)
-        @load_object.variants.each_with_index {|v, i| v.count_on_hand == values[i] }
-      else
-        puts "WARNING: Count on hand entries does not match number of Variants"
-      end
-
-    else
-      super(method_map, value)
     end
 
+    def value_at(row, column)
+      @excel.value( @excel.sheet.getRow(row), column)
+    end
+    
   end
 end

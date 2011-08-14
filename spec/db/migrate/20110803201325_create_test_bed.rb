@@ -2,44 +2,59 @@ class CreateTestBed < ActiveRecord::Migration
   
   def self.up
 
-    create_table :simples do |t|
-      t.string   :name
-      t.timestamps
-    end
-
-    create_table :test_models do |t|
+    # has many :milestones
+    create_table :projects do |t|
+      t.string   :title
       t.string   :value_as_string
       t.text     :value_as_text
       t.boolean  :value_as_boolean, :default => false
       t.datetime :value_as_datetime, :default => nil
+      t.integer  :value_as_integer, :default => 0
+      t.decimal  :value_as_double, :precision => 8, :scale => 2, :default => 0.0
       t.timestamps
     end
 
-    create_table :test_association_models do |t|
-      t.string     :value_as_string
-      t.string     :another_string
-      t.references :test_model
+    # belongs_to  :project
+    create_table :milestones do |t|
+      t.string     :name
+      t.datetime   :datetime, :default => nil
+      t.decimal    :cost, :precision => 8, :scale => 2, :default => 0.0
+      t.references :project
+      t.timestamps
+    end
+
+    create_table :categories do |t|
+      t.string   :name
       t.timestamps
     end
 
      # testing has_belongs_to_many
-    create_table :simples_test_modles do |t|
-      t.references :simple_model
-      t.references :test_model
+    create_table :categories_projects, :id => false do |t|
+      t.references :category
+      t.references :project
     end
 
-    # testing has_many :through
-    create_table :test_joins do |t|
-      t.string   :join_name
-      t.references :simple_model
-      t.references :test_model
-       t.timestamps
+    create_table :versions do |t|
+      t.string   :name
+      t.timestamps
+    end
+
+    # testing project has_many release + versions :through
+    create_table :releases do |t|
+      t.string   :name
+      t.references :project
+      t.references :version
+      t.timestamps
     end
 
   end
 
   def self.down
-    drop_table :test_models
-    drop_table :test_association_models
+    drop_table :projects
+    drop_table :categories
+    drop_table :releases
+    drop_table :versions
+    drop_table :categories_projectss
+    drop_table :milestones
   end
 end

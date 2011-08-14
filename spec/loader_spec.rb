@@ -14,31 +14,27 @@ describe 'Basic Loader' do
   before(:all) do
     db_connect( 'test_file' )    # , test_memory, test_mysql
     migrate_up
-    @klazz = TestModel
+    @klazz = Project
     @assoc_klazz = TestAssociationModel
   end
   
   before(:each) do
-    #@row = TestModel.find_or_create_by_value_as_string( 'I am a String', :value_as_text => "I am lots\n of text", :value_as_boolean => true)
-    #:value_as_datetime)
-
     MethodMapper.clear
     MethodMapper.find_operators( @klazz )
     MethodMapper.find_operators( @assoc_klazz )
-
   end
   
   it "should be able to create a new loader and load object" do
-    loader = LoaderBase.new( TestModel)
+    loader = LoaderBase.new( Project)
 
     loader.load_object.should_not be_nil
-    loader.load_object.should be_is_a(TestModel)
+    loader.load_object.should be_is_a(Project)
     loader.load_object.new_record?.should be_true
   end
 
   it "should process a string field against an assigment method detail" do
 
-    loader = LoaderBase.new(TestModel)
+    loader = LoaderBase.new(Project)
 
     column = 'Value As String'
     row = 'Another Lazy fox '
@@ -50,7 +46,7 @@ describe 'Basic Loader' do
 
   it "should process a text field against an assigment method detail" do
 
-    loader = LoaderBase.new(TestModel)
+    loader = LoaderBase.new(Project)
 
     column = :value_as_text
     row = "Another Lazy fox\nJumped over something and bumped,\nHis head"
@@ -63,7 +59,7 @@ describe 'Basic Loader' do
 
   it "should process a boolean field against an assigment method detail" do
 
-    loader = LoaderBase.new(TestModel)
+    loader = LoaderBase.new(Project)
 
     column = :value_as_boolean
     row = true
@@ -86,7 +82,7 @@ describe 'Basic Loader' do
 
   it "should process various date formats against a date assigment operator" do
 
-    loader = LoaderBase.new(TestModel)
+    loader = LoaderBase.new(Project)
 
     column = :value_as_datetime
 

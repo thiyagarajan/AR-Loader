@@ -116,12 +116,8 @@ class MethodDetail
     value
   end
 
-  def assign( record, value )
-
-    value.each {|v| assign(record, v) } if(value.is_a?(Array))
-
-    #puts "DEBUG: assign: [#{@name}]"
-
+  def assign(record, value )
+    
     @current_value = validate_value(value)
 
     puts "WARNING nil value supplied for Column [#{@name}]" if(@current_value.nil?)
@@ -133,16 +129,22 @@ class MethodDetail
 
     elsif( operator_for(:has_many) )
 
-      puts "DEBUG : HAS_MANY :  #{@name} : #{operator} - Lookup #{@current_value} in DB"
-      insistent_has_many(record, @current_value)
-
+      #puts "DEBUG : HAS_MANY :  #{@name} : #{operator}(#{operator_class}) - Lookup #{@current_value} in DB"
+      if(value.is_a?(Array) || value.is_a?(operator_class))
+        record.send(operator) << value
+      else
+        puts "ERROR #{value.class} - Not expected type for has_many #{name} - cannot assign"
+        # TODO -  Not expected type - maybe try to look it up somehow ?"
+        #insistent_has_many(record, @current_value)
+      end
+      
     elsif( operator_for(:assignment) && @col_type )
       #puts "DEBUG : COl TYPE defined for #{@name} : #{@assignment} => #{@current_value} #{@col_type.inspect}"
       #puts "DEBUG : COl TYPE CAST: #{@current_value} => #{@col_type.type_cast( @current_value ).inspect}"
       record.send( @assignment + '=' , @col_type.type_cast( @current_value ) )
 
     elsif( operator_for(:assignment) )
-      puts "DEBUG : Brute force assignment of value  #{@current_value} supplied for Column [#{@name}]"
+      #puts "DEBUG : Brute force assignment of value  #{@current_value} supplied for Column [#{@name}]"
       # brute force case for assignments without a column type (which enables us to do correct type_cast)
       # so in this case, attempt straightforward assignment then if that fails, basic ops such as to_s, to_i, to_f etc
       insistent_assignment(record, @current_value)
@@ -171,6 +173,11 @@ class MethodDetail
 
 
   private
+
+  def self.insistent_method_list
+    @insistent_method_list ||= [:to_s, :to_i, :to_f, :to_b]
+    @insistent_method_list
+  end
 
   # Attempt to find the associated object via id, name, title ....
   def insistent_belongs_to( record, value )
@@ -224,7 +231,6 @@ class MethodDetail
     puts "DEBUG: RECORD CLASS #{record.class}"
     op = @assignment + '='
     
-    @@insistent_method_list ||= [:to_s, :to_i, :to_f, :to_b]
     begin
       record.send(op, value)
     rescue => e

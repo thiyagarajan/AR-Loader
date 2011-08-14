@@ -12,7 +12,7 @@ describe 'Method Mapping' do
   before(:all) do
     db_connect( 'test_file' )    # , test_memory, test_mysql
     migrate_up
-    @klazz = TestModel
+    @klazz = Project
     @assoc_klazz = TestAssociationModel
   end
   
@@ -25,20 +25,20 @@ describe 'Method Mapping' do
   it "should populate method map for a given AR model" do
 
     MethodMapper.has_many.should_not be_empty
-    MethodMapper.has_many[TestModel].should include('test_association_models')
+    MethodMapper.has_many[Project].should include('test_association_models')
 
     MethodMapper.assignments.should_not be_empty
-    MethodMapper.assignments[TestModel].should include('id')
-    MethodMapper.assignments[TestModel].should include('value_as_string')
-    MethodMapper.assignments[TestModel].should include('value_as_text')
+    MethodMapper.assignments[Project].should include('id')
+    MethodMapper.assignments[Project].should include('value_as_string')
+    MethodMapper.assignments[Project].should include('value_as_text')
 
     MethodMapper.belongs_to.should_not be_empty
-    MethodMapper.belongs_to[TestModel].should be_empty
+    MethodMapper.belongs_to[Project].should be_empty
 
 
     MethodMapper.column_types.should be_is_a(Hash)
     MethodMapper.column_types.should_not be_empty
-    MethodMapper.column_types[TestModel].size.should == TestModel.columns.size
+    MethodMapper.column_types[Project].size.should == Project.columns.size
 
 
   end
@@ -137,8 +137,8 @@ describe 'Method Mapping' do
 
       method_details = MethodMapper.find_method_detail( @assoc_klazz, format )
 
-      method_details.operator_class_name.should == 'TestModel'
-      method_details.operator_class.should == TestModel
+      method_details.operator_class_name.should == 'Project'
+      method_details.operator_class.should == Project
     end
 
     [:value_as_string, 'value_as_string', "VALUE as_STRING", "value as string"].each do |format|
@@ -179,11 +179,30 @@ describe 'Method Mapping' do
     end
   end
 
-    it "should return nil when non existent column name" do
+  it "should return nil when non existent column name" do
     ["On sale", 'on_sale'].each do |format|
       detail = MethodMapper.find_method_detail( @klazz, format )
 
       detail.should be_nil
+    end
+  end
+
+
+  it "should find a set of methods based on a list of column names" do
+
+    mapper = MethodMapper.new
+
+    [:value_as_string, 'value_as_string', "VALUE as_STRING", "value as string"].each do |format|
+
+      method_details = MethodMapper.find_method_detail( @klazz, format )
+
+      method_details.class.should == MethodDetail
+
+      method_details.col_type.should_not be_nil
+      method_details.col_type.name.should == 'value_as_string'
+      method_details.col_type.default.should == nil
+      method_details.col_type.sql_type.should include 'varchar(255)'   # db specific, sqlite
+      method_details.col_type.type.should == :string
     end
   end
 

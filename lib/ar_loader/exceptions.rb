@@ -1,0 +1,2 @@
+class MappingDefinitionError < StandardError
+end

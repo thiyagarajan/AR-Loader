@@ -20,7 +20,7 @@ require 'method_detail'
 class MethodMapper
 
   attr_accessor :header_row, :headers
-  attr_accessor :methods
+  attr_accessor :methods, :missing_methods
   
   @@has_many     = Hash.new
   @@belongs_to   = Hash.new
@@ -36,9 +36,15 @@ class MethodMapper
   # Handles method names as defined by a user or in file headers where names may
   # not be exactly as required e.g handles capitalisation, white space, _ etc
   
-  def find_method_details( klass, method_list )
-    @methods = method_list.collect { |x| MethodMapper::find_method_detail( klass, x ) }
-    @methods.compact!
+  def find_all_method_details( klass, method_list )
+    @methods, @missing_methods = [], []
+    
+    method_list.each do |x|
+      md = MethodMapper::find_method_detail( klass, x )
+      md ? @methods << md : @missing_methods << x
+    end
+    #@methods.compact!
+    @methods
   end
 
   def method_names()
@@ -107,16 +113,17 @@ class MethodMapper
       name.gsub(' ', '').downcase,
       name.gsub(' ', '_').underscore].each do |n|
       
-        assign     = (assignments_for(klass).include?(n))?  n : nil
-          break if assign
-        has_many   = (has_many_for(klass).include?(n))   ?  n : nil
-          break if has_many
-        belongs_to = (belongs_to_for(klass).include?(n)) ?  n : nil
-          break if belongs_to
+      assign     = (assignments_for(klass).include?(n))?  n : nil
+      break if assign
+      has_many   = (has_many_for(klass).include?(n))   ?  n : nil
+      break if has_many
+      belongs_to = (belongs_to_for(klass).include?(n)) ?  n : nil
+      break if belongs_to
 
     end
 
     if(assign || belongs_to || has_many)
+      #puts "New MethodDetails #{klass}, #{name}, #{assign}, #{belongs_to}, #{has_many},"
       return MethodDetail.new(klass, name, assign, belongs_to, has_many, @@column_types[klass])
     end
 
@@ -160,16 +167,6 @@ class MethodMapper
   end
   def self.column_type_for(klass, column)
     @@column_types[klass] ?  @@column_types[klass][column] : []
-  end
-
-
-  def find_or_new( klass, condition_hash = {} )
-    @records[klass] = klass.find(:all, :conditions => condition_hash)
-    if @records[klass].any?
-      return @records[klass].first
-    else
-      return klass.new
-    end
   end
   
 end

@@ -4,6 +4,7 @@ require 'erb'
 
 require File.dirname(__FILE__) + '/../lib/ar_loader'
 
+
 #.# Copyright:: (c) Autotelik Media Ltd 2011
 # Author ::   Tom Statter
 # Date ::     Aug 2011
@@ -15,15 +16,6 @@ require File.dirname(__FILE__) + '/../lib/ar_loader'
 # We are not setup as a Rails project so need to mimic an active record database setup so
 # we have some  AR models top test against. Create an in memory database from scratch.
 #
-
-class TestModel < ActiveRecord::Base
-  has_many :test_association_models
-end
-
-class TestAssociationModel < ActiveRecord::Base
-  belongs_to :test_model
-end
-
 
 def db_connect( env = 'test_file')
 
@@ -48,8 +40,17 @@ def db_connect( env = 'test_file')
   ActiveRecord::Base.logger = Logger.new(STDOUT)
 
   #puts "Connected to DB - #{ActiveRecord::Base.connection.inspect}"
+
+  require File.dirname(__FILE__) + '/fixtures/models'
+
+  # handle migration changes or reset of test DB
+  migrate_up
+
 end
 
+def db_clear
+  [Project, Milestone, Category, Version, Release].each {|x| x.delete_all}
+end
 
 def load_in_memory
   load "#{Rails.root}/db/schema.rb"

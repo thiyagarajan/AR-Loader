@@ -157,9 +157,6 @@ describe 'SpreeLoader' do
 
     MethodMapper.find_operators( @klazz )
 
-    puts "MAPPPPPPPERRRR"
-    puts MethodMapper.has_many[@klazz].inspect
-
     method_detail = MethodMapper.find_method_detail( @klazz, 'product_properties' )
 
     method_detail.operator.should == 'product_properties'
