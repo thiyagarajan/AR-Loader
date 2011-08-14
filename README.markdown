@@ -8,11 +8,12 @@ Simplifies the specification and loading of data from such files into any active
 Aims to generically and seamlessly, handle loading an active record model's attributes and it's associations,
 based on reflection against the supplied model.
 
-So rather than hard coded mappings, uses the file's column headings to map data to model's attributes and associations,
-which makes it extendable via file data rather than requiring new coding.
+So rather than hard coded mappings, uses the file's column headings to map data to a model's attributes and associations.
 
-Simply add new column to Excel/Open Office spreadsheet, or csv file with new
-attribute or association name, and loader will attempt to find correct association and populate AR object with row data.
+This makes loaders extendable via column/file data rather than requiring new Ruby coding.
+
+Simply add the new column to an Excel/Open Office spreadsheet, or CSV file, and add the new
+attribute or association name to the header row. Loader will attempt to find correct association and populate AR object with row data.
 
 The Loader attempts to handle various human read-able forms of column names.
 
@@ -40,8 +41,8 @@ To pull the tasks in, add call in your Rakefile :
 
     ArLoader::load_tasks
 
-N.B - To use the Excel loader, Excel itself is NOT required, however
-JRuby is required, since it uses Java's Apache POI under the hood to process file.
+N.B - To use the Excel loader, OLE and Excel are NOT required, however
+JRuby is required, since it uses Java's Apache POI under the hood to process .xls files.
 
 To use in a mixed Ruby setup, you can use a guard something like :
 
@@ -52,9 +53,9 @@ To use in a mixed Ruby setup, you can use a guard something like :
     end
 
 ## Example Spreadsheet
+    
+  A number of example Spreadsheets with headers and comments, can be found in the spec/fixtures directory.
 
-  An example Spreadsheet with headers and comments, suitable for giving to Clients
-  to populate, can be found in test/examples/DemoSpreadsheet.xls
 
 ## Features
 
@@ -77,23 +78,26 @@ To use in a mixed Ruby setup, you can use a guard something like :
 
 - *Associations*
 
-  Can handle 'many' type associations and enables multiple association objects to
-  be added via single entry (column). See Details section.
+  Can handle 'belongs_to, 'has_many' and 'has_one' associations, including assignment of multiple objects
+  via either multiple columns, or via specially delimited entry in a single (column). See Details section.
 
 - *Spree Rake Tasks*
 
-  Rake tasks provided for Spree loading - currently supports Product with associations,
+  High level Rake tasks are provided  for example
+
+    jruby -S rake ar_loader:excel_load model=MusicTrack input=MyTrackListing.xls
+
+
+  Specific Rake tasks are also provided for Spree loading - currently supports Product with associations,
   and Image loading.
 
-  **Product loading from Excel specifically requires JRuby**. 
+    jruby -S rake ar_loader:spree:products input=C:\MyProducts.xls
 
-  Example command lines:
 
-    rake excel_load input=vendor\extensions\autotelik\fixtures\ExampleInfoWeb.xls
+  **Product loading from Excel files specifically requires JRuby (But not Excel or OLE)**.
 
-    rake excel_load input=C:\MyProducts.xls verbose=true'
 
-- *Seamless Image loading can be achieved by ensuring SKU or class Name features in Image filename.
+- *Seamless Spree Image loading can be achieved by ensuring SKU or class Name features in Image filename.
 
   Lookup is performed either via the SKU being prepended to the image name, or by the image name being equal to the **name attribute** of the klass in question.
 
@@ -106,11 +110,9 @@ To use in a mixed Ruby setup, you can use a guard something like :
 
   A report is generated in the current working directory detailing any Images in the paths that could not be matched with a Product.
 
-  Example cmd lines :
+  rake ar_loader:spree:images input=C:\images\product_images skip_if_no_assoc=true
 
-      rake image_load input=vendor\extensions\autotelik\lib\fixtures
-      rake image_load input="C:\images\Paintings' dummy=true
-      rake image_load input="C:\images\TaxonIcons" skip_if_no_assoc=true klass=Taxon
+  rake ar_loader:spree:images input=C:\images\taxon_icons skip_if_no_assoc=true klass=Taxon
 
 ## Example Wrapper Tasks for Spree Site Extension
 
@@ -130,7 +132,7 @@ A report is generated in the current working directory detailing any Images in t
       [ "vendor/extensions/site/db/seed/Paintings.xls",
         "vendor/extensions/site/db/seed/Drawings.xls"
       ].each do |x|
-        Rake::Task['autotelik:excel_load'].execute(
+        Rake::Task['ar_loader:spree:products'].execute(
           :input => x,
           :verbose => true,
           :sku_prefix => ""

@@ -6,9 +6,10 @@
 # Details::   Specific over-rides/additions to support Spree Products
 #
 require 'loader_base'
+require 'excel_loader'
 require 'product'
 
-class ProductLoader < LoaderBase
+class ProductLoader < ExcelLoader
 
   def initialize(klass = Product, product = nil)
     super( klass, product )
@@ -75,8 +76,7 @@ class ProductLoader < LoaderBase
         @load_object.product_properties << ProductProperty.create( :property => property, :value => pvalue)
       end
 
-    elsif(method_map.name == 'count_on_hand' && @load_object.variants.size > 0 &&
-          @value.is_a?(String) && @value.include?(@@multi_assoc_delim))
+    elsif(method_map.name == 'count_on_hand' && @load_object.variants.size > 0 && @value.is_a?(String) && @value.include?(@@multi_assoc_delim))
       # Check if we processed Option Types and assign count per option
       values = @value.split(@@multi_assoc_delim)
       if(@load_object.variants.size == values.size)
