@@ -15,7 +15,7 @@ require 'to_b'
 class MethodDetail
 
   def self.type_enum
-    @type_enum ||= Set[:assignment, :belongs_to, :has_many]
+    @type_enum ||= Set[:assignment, :belongs_to, :has_one, :has_many]
     @type_enum
   end
 
@@ -23,49 +23,47 @@ class MethodDetail
   #  i.e find_by_name .. find_by_title and so on, lastly try the raw id
   @@insistent_find_by_list ||= [:name, :title, :id]
 
-  # Name is the raw, client supplied name
-  attr_reader :name, :col_type, :current_value
- 
-  attr_reader :assignment, :belongs_to, :has_many
-
   @@default_values = {}
   @@prefixes = {}
 
 
-  # Store the raw (client supplied) name against the mapped against
-  def initialize(klass, name, assignment, belongs_to, has_many, col_types = {} )
-    @klass, @name = klass, name
-    @assignment, @has_many, @belongs_to = assignment, has_many, belongs_to
+  # Name is the raw, client supplied name
+  attr_reader :name, :col_type, :current_value
 
+  attr_reader :operator, :operator_type
+
+  # Store the raw (client supplied) name against the active record  klass(model), operator and types
+  def initialize(client_name, klass, operator, type, col_types = {} )
+    @klass, @name = klass, client_name
+
+    if( MethodDetail::type_enum.member?(type.to_sym) )
+      @operator_type = type
+    else
+      raise "Bad operator Type #{type} passed to Method Detail"
+    end
+
+    @operator = operator
+    
     # Note : Not all assignments will currently have a column type, for example
     # those that are derived from a delegate_belongs_to
     @col_type = col_types[operator]
   end
 
 
-  # Return the actual operators reflection type
-  def operator_type()
-    MethodDetail::type_enum.find{|x| operator_for(x); }
+  # Return the actual operator's name for supplied method type
+  # where type one of :assignment, :has_one, :belongs_to, :has_many etc
+  def operator_for( type )
+    return operator if(@operator_type == type)
+    nil
   end
 
-  # Return the actual operator's name
-  def operator()
-    @operator ||= operator_for(operator_type)
-    @operator
-  end
 
   # Return the operator's expected class name, if can be derived, else nil
   def operator_class_name()
-    @operator_class_name ||= if(@has_many)
+    @operator_class_name ||= if(operator_for(:has_many) || operator_for(:belongs_to) || operator_for(:has_one))
       begin
-        Kernel.const_get(@has_many.classify)
-        @has_many.classify
-      rescue; ""; end
-      
-    elsif(@belongs_to)
-      begin
-        Kernel.const_get(@belongs_to.classify)
-        @belongs_to.classify
+        Kernel.const_get(operator.classify)
+        operator.classify
       rescue; ""; end
   
     elsif(@col_type)
@@ -79,15 +77,10 @@ class MethodDetail
 
   # Return the operator's expected class, if can be derived, else nil
   def operator_class()
-    @operator_class ||= if(@has_many)
+    @operator_class ||= if(operator_for(:has_many) || operator_for(:belongs_to) || operator_for(:has_one))
       begin
-        Kernel.const_get(@has_many.classify)
-      rescue; nil; end
-
-    elsif(@belongs_to)
-      begin
-        Kernel.const_get(@belongs_to.classify)
-      rescue; nil; end
+        Kernel.const_get(operator.classify)
+      rescue; ""; end
 
     elsif(@col_type)
       begin
@@ -100,12 +93,7 @@ class MethodDetail
     @operator_class
   end
 
-  # Return the actual operator's name for supplied method type
-  # where type one of :assignment, :belongs_to, :has_many etc
-  def operator_for( type )
-    return self.send(type) if( MethodDetail::type_enum.member?(type) )
-    nil
-  end
+
 
   def validate_value(value)
 
@@ -133,15 +121,26 @@ class MethodDetail
       if(value.is_a?(Array) || value.is_a?(operator_class))
         record.send(operator) << value
       else
-        puts "ERROR #{value.class} - Not expected type for has_many #{name} - cannot assign"
+        puts "ERROR #{value.class} - Not expected type for has_many #{operator} - cannot assign"
         # TODO -  Not expected type - maybe try to look it up somehow ?"
         #insistent_has_many(record, @current_value)
       end
-      
+
+    elsif( operator_for(:has_one) )
+
+      #puts "DEBUG : HAS_MANY :  #{@name} : #{operator}(#{operator_class}) - Lookup #{@current_value} in DB"
+      if(value.is_a?(operator_class))
+        record.send(operator + '=', value)
+      else
+        puts "ERROR #{value.class} - Not expected type for has_one #{operator} - cannot assign"
+        # TODO -  Not expected type - maybe try to look it up somehow ?"
+        #insistent_has_many(record, @current_value)
+      end
+
     elsif( operator_for(:assignment) && @col_type )
       #puts "DEBUG : COl TYPE defined for #{@name} : #{@assignment} => #{@current_value} #{@col_type.inspect}"
       #puts "DEBUG : COl TYPE CAST: #{@current_value} => #{@col_type.type_cast( @current_value ).inspect}"
-      record.send( @assignment + '=' , @col_type.type_cast( @current_value ) )
+      record.send( operator + '=' , @col_type.type_cast( @current_value ) )
 
     elsif( operator_for(:assignment) )
       #puts "DEBUG : Brute force assignment of value  #{@current_value} supplied for Column [#{@name}]"
@@ -228,23 +227,21 @@ class MethodDetail
   end
 
   def insistent_assignment( record, value )
-    puts "DEBUG: RECORD CLASS #{record.class}"
-    op = @assignment + '='
+    #puts "DEBUG: RECORD CLASS #{record.class}"
+    op = operator + '='
     
     begin
       record.send(op, value)
     rescue => e
-      puts e.inspect
       @@insistent_method_list.each do |f|
         begin
-
           record.send(op, value.send( f) )
           break
         rescue => e
           #puts "DEBUG: insistent_assignment: #{e.inspect}"
           if f == @@insistent_method_list.last
-            puts  "I'm sorry I have failed to assign [#{value}] to #{@assignment}"
-            raise "I'm sorry I have failed to assign [#{value}] to #{@assignment}" unless value.nil?
+            puts  "I'm sorry I have failed to assign [#{value}] to #{operator}"
+            raise "I'm sorry I have failed to assign [#{value}] to #{operator}" unless value.nil?
           end
         end
       end

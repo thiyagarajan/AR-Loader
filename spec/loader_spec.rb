@@ -15,20 +15,18 @@ describe 'Basic Loader' do
     db_connect( 'test_file' )    # , test_memory, test_mysql
     migrate_up
     @klazz = Project
-    @assoc_klazz = TestAssociationModel
   end
   
   before(:each) do
     MethodMapper.clear
     MethodMapper.find_operators( @klazz )
-    MethodMapper.find_operators( @assoc_klazz )
   end
   
   it "should be able to create a new loader and load object" do
-    loader = LoaderBase.new( Project)
+    loader = LoaderBase.new( @klazz )
 
     loader.load_object.should_not be_nil
-    loader.load_object.should be_is_a(Project)
+    loader.load_object.should be_is_a(@klazz)
     loader.load_object.new_record?.should be_true
   end
 

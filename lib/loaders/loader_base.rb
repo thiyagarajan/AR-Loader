@@ -96,7 +96,7 @@ class LoaderBase
     @current_value = value
     @current_method_detail = method_detail
 
-    if(method_detail.has_many)
+    if(method_detail.operator_for(:has_many))
 
       if(method_detail.operator_class && @current_value)
 
@@ -105,24 +105,22 @@ class LoaderBase
         
         save if( load_object.valid? && load_object.new_record? )
 
-        puts "Processing Association: #{method_detail.has_many} : #{@current_value}"
-
         # A single column can contain multiple associations delimited by special char
         columns = @current_value.split(@@multi_assoc_delim)
 
         # Size:large|Colour:red,green,blue   => generates find_by_size( 'large' ) and find_all_by_colour( ['red','green','blue'] )
 
         columns.each do |assoc|
-          key, values = assoc.split(@@name_value_delim)
+          operator, values = assoc.split(@@name_value_delim)
 
           lookups = values.split(@@multi_value_delim)
 
           if(lookups.size > 1)
 
-            @current_value = method_detail.operator_class.send("find_all_by_#{key}", lookups )
+            @current_value = method_detail.operator_class.send("find_all_by_#{operator}", lookups )
 
             unless(lookups.size == @current_value.size)
-              found = @current_value.collect {|f| f.send(key) }
+              found = @current_value.collect {|f| f.send(operator) }
               @load_object.errors.add( method_detail.operator, "Association with key(s) #{(lookups - found).inspect} NOT found")
               puts "WARNING: Association with key(s) #{(lookups - found).inspect} NOT found - Not added."
               next if(@current_value.empty?)
@@ -130,7 +128,7 @@ class LoaderBase
 
           else
 
-            @current_value = method_detail.operator_class.send("find_by_#{key}", lookups )
+            @current_value = method_detail.operator_class.send("find_by_#{operator}", lookups )
 
             unless(@current_value)
               @load_object.errors.add( method_detail.operator, "Association with key #{lookups} NOT found")
@@ -153,7 +151,6 @@ class LoaderBase
 
   def save
     begin
-      puts "SAVE #{@current_method_detail.name} : #{@load_object.inspect}"
       @load_object.save
     rescue => e
       @failed_objects << load_object

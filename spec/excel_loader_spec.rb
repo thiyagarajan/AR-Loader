@@ -26,8 +26,8 @@ describe 'Excel Loader' do
 
     Project.delete_all
     
-    %w{category_001 category_002 category_003}.each do |c|
-      @assoc_klazz.find_or_create_by_name(c)
+    %w{category_001 category_002 category_003}.each do |cat|
+      @assoc_klazz.find_or_create_by_reference(cat)
     end
 
     MethodMapper.clear

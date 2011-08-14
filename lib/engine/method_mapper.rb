@@ -76,12 +76,21 @@ class MethodMapper
 
     #puts "Belongs To Associations:", @@belongs_to[klass].inspect
 
+    # Find the has_one associations which can be populated via  Model.has_one_name = OtherArModelObject
+    if( options[:reload] || self.has_one[klass].nil? )
+      self.has_one[klass] = klass.reflect_on_all_associations(:has_one).map { |i| i.name.to_s }
+    end
+
+    #puts "has_one Associations:", self.has_one[klass].inspect
+
     # Find the model's column associations which can be populated via = value
     if( options[:reload] || @@assignments[klass].nil? )
+
       @@assignments[klass] = (klass.column_names + klass.instance_methods.grep(/=/).map{|i| i.gsub(/=/, '')})
-      @@assignments[klass] = @@assignments[klass] - @@has_many[klass] if(@@has_many[klass])
-      @@assignments[klass] = @@assignments[klass] - @@belongs_to[klass] if(@@belongs_to[klass])
-      
+      @@assignments[klass] -= @@has_many[klass] if(@@has_many[klass])
+      @@assignments[klass] -= @@belongs_to[klass] if(@@belongs_to[klass])
+      @@assignments[klass] -= self.has_one[klass] if(self.has_one[klass])
+ 
       @@assignments[klass].uniq!
 
       @@assignments[klass].each do |assign|
@@ -98,7 +107,7 @@ class MethodMapper
   # If not nil, returned method can be used directly in for example klass.new.send( call, .... )
   #
   def self.find_method_detail( klass, external_name )
-    assign, belongs_to, has_many = nil, nil, nil
+    assign = nil
 
     name = external_name.to_s
 
@@ -108,23 +117,28 @@ class MethodMapper
       name,
       name.tableize,
       name.gsub(' ', '_'),
-      name.gsub(' ', ''),
       name.gsub(' ', '_').downcase,
+      name.gsub(/(\s+)/, '_').downcase,
+      name.gsub(' ', ''),
       name.gsub(' ', '').downcase,
       name.gsub(' ', '_').underscore].each do |n|
       
-      assign     = (assignments_for(klass).include?(n))?  n : nil
-      break if assign
-      has_many   = (has_many_for(klass).include?(n))   ?  n : nil
-      break if has_many
-      belongs_to = (belongs_to_for(klass).include?(n)) ?  n : nil
-      break if belongs_to
+      assign = (assignments_for(klass).include?(n)) ? n : nil
+      
+      return MethodDetail.new(name, klass, assign, :assignment, @@column_types[klass]) if(assign)
 
-    end
+      assign = (has_one_for(klass).include?(n)) ? n : nil
+      
+      return MethodDetail.new(name, klass, assign, :has_one, @@column_types[klass]) if(assign)
 
-    if(assign || belongs_to || has_many)
-      #puts "New MethodDetails #{klass}, #{name}, #{assign}, #{belongs_to}, #{has_many},"
-      return MethodDetail.new(klass, name, assign, belongs_to, has_many, @@column_types[klass])
+      assign = (has_many_for(klass).include?(n)) ?  n : nil
+      
+      return MethodDetail.new(name, klass, assign, :has_many, @@column_types[klass]) if(assign)
+      
+      assign = (belongs_to_for(klass).include?(n)) ? n : nil
+      
+      return MethodDetail.new(name, klass, assign, :belongs_to, @@column_types[klass]) if(assign)
+      
     end
 
     nil
@@ -135,6 +149,7 @@ class MethodMapper
     @@has_many.clear
     @@assignments.clear
     @@column_types.clear
+    self.has_one.clear
   end
 
   def self.column_key(klass, column)
@@ -145,9 +160,16 @@ class MethodMapper
   def self.belongs_to
     @@belongs_to
   end
+
   def self.has_many
     @@has_many
   end
+
+  def self.has_one
+    @has_one ||= {}
+    @has_one
+  end
+
   def self.assignments
     @@assignments
   end
@@ -162,6 +184,11 @@ class MethodMapper
   def self.has_many_for(klass)
     @@has_many[klass] || []
   end
+
+  def self.has_one_for(klass)
+    self.has_one[klass] || []
+  end
+
   def self.assignments_for(klass)
     @@assignments[klass] || []
   end

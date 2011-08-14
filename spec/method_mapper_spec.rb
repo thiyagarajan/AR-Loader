@@ -13,7 +13,7 @@ describe 'Method Mapping' do
     db_connect( 'test_file' )    # , test_memory, test_mysql
     migrate_up
     @klazz = Project
-    @assoc_klazz = TestAssociationModel
+    @assoc_klazz = Milestone
   end
   
   before(:each) do
@@ -25,7 +25,7 @@ describe 'Method Mapping' do
   it "should populate method map for a given AR model" do
 
     MethodMapper.has_many.should_not be_empty
-    MethodMapper.has_many[Project].should include('test_association_models')
+    MethodMapper.has_many[Project].should include('milestones')
 
     MethodMapper.assignments.should_not be_empty
     MethodMapper.assignments[Project].should include('id')
@@ -53,16 +53,7 @@ describe 'Method Mapping' do
   end
 
 
-  it "should find method details for different forms of a column name" do
-    MethodMapper.find_method_detail( @klazz, 'TestAssociationModels' ).class.should == MethodDetail
-    MethodMapper.find_method_detail( @klazz, :test_association_models ).class.should == MethodDetail
-    MethodMapper.find_method_detail( @klazz, 'test association models' ).class.should == MethodDetail
-    MethodMapper.find_method_detail( @klazz, "Test Association Models" ).class.should == MethodDetail
-    MethodMapper.find_method_detail( @klazz, 'Test Association_models' ).class.should == MethodDetail
-    MethodMapper.find_method_detail( @klazz, 'Test association_models' ).class.should == MethodDetail
-  end
-
-  it "should find assignment operator for method details for different forms of a column name" do
+  it "should populate assignment operators for method details for different forms of a column name" do
 
     [:value_as_string, 'value_as_string', "VALUE as_STRING", "value as string"].each do |format|
 
@@ -73,89 +64,10 @@ describe 'Method Mapping' do
       method_details.name.should eq( format.to_s )
 
       method_details.operator.should == 'value_as_string'
-      method_details.assignment.should == 'value_as_string'
       method_details.operator_for(:assignment).should == 'value_as_string'
 
       method_details.operator_for(:belongs_to).should be_nil
       method_details.operator_for(:has_many).should be_nil
-
-      method_details.belongs_to.should be_nil
-      method_details.has_many.should be_nil
-    end
-  end
-
-  it "should find belongs_to operator for method details for different forms of a column name" do
-
-    [:test_model, 'test MODEL', "test model", "test_model"].each do |format|
-
-      method_details = MethodMapper.find_method_detail( @assoc_klazz, format )
-
-      method_details.should_not be_nil
-
-      result = 'test_model'
-      method_details.operator.should == result
-      method_details.belongs_to.should == result
-      method_details.operator_for(:belongs_to).should == result
-
-      method_details.operator_for(:assignment).should be_nil
-      method_details.operator_for(:has_many).should be_nil
-
-      method_details.assignment.should be_nil
-      method_details.has_many.should be_nil
-    end
-
-  end
-
-
-  it "should find has_many operator for method details" do
-
-    [:test_association_models, "Test Association Models"].each do |format|
-
-      method_details = MethodMapper.find_method_detail( @klazz, format )
-
-      method_details.class.should == MethodDetail
-
-      puts "Processing form", method_details.name
-      
-      result = 'test_association_models'
-      method_details.operator.should == result
-      method_details.has_many.should == result
-      method_details.operator_for(:has_many).should == result
-
-      method_details.operator_for(:belongs_to).should be_nil
-      method_details.operator_for(:assignments).should be_nil
-
-      method_details.assignment.should be_nil
-      method_details.belongs_to.should be_nil
-    end
-
-  end
-
-  it "should find association class for belongs_to operator method details" do
-
-    [:test_model, 'test MODEL', "test model", "test_model"].each do |format|
-
-      method_details = MethodMapper.find_method_detail( @assoc_klazz, format )
-
-      method_details.operator_class_name.should == 'Project'
-      method_details.operator_class.should == Project
-    end
-
-    [:value_as_string, 'value_as_string', "VALUE as_STRING", "value as string"].each do |format|
-
-      method_details = MethodMapper.find_method_detail( @assoc_klazz, format )
-
-      method_details.operator_class_name.should == 'String'
-      method_details.operator_class.should be_is_a(Class)
-      method_details.operator_class.should == String
-    end
-
-
-    [:test_association_models, "Test Association Models"].each do |format|
-      method_details = MethodMapper.find_method_detail( @klazz, format )
-
-      method_details.operator_class_name.should == 'TestAssociationModel'
-      method_details.operator_class.should == TestAssociationModel
     end
   end
 
@@ -163,7 +75,7 @@ describe 'Method Mapping' do
   # Note : Not all assignments will currently have a column type, for example
   # those that are derived from a delegate_belongs_to
 
-  it "should populate column types in method details" do
+  it "should populate column types for assignment operators in method details" do
 
     [:value_as_string, 'value_as_string', "VALUE as_STRING", "value as string"].each do |format|
 
@@ -179,6 +91,104 @@ describe 'Method Mapping' do
     end
   end
 
+  it "should populate required Class for assignment operators based on column type" do
+
+    [:value_as_string, 'value_as_string', "VALUE as_STRING", "value as string"].each do |format|
+
+      method_details = MethodMapper.find_method_detail( Project, format )
+
+      method_details.operator_class_name.should == 'String'
+      method_details.operator_class.should be_is_a(Class)
+      method_details.operator_class.should == String
+    end
+
+  end
+
+  it "should populate belongs_to operator for method details for different forms of a column name" do
+
+    # milestone.project = project.id
+    [:project, 'project', "PROJECT", "prOJECt"].each do |format|
+
+      method_details = MethodMapper.find_method_detail( Milestone, format )
+
+      method_details.should_not be_nil
+
+      method_details.operator.should == 'project'
+      method_details.operator_for(:belongs_to).should == 'project'
+
+      method_details.operator_for(:assignment).should be_nil
+      method_details.operator_for(:has_many).should be_nil
+    end
+
+  end
+
+  it "should populate required Class for belongs_to operator method details" do
+
+    MethodMapper.find_operators( LoaderRelease )
+    MethodMapper.find_operators( LongAndComplexTableLinkedToVersion )
+
+    # release.project = project.id
+    [:project, 'project', "PROJECT", "prOJECt"].each do |format|
+
+      method_details = MethodMapper.find_method_detail( LoaderRelease, format )
+
+      method_details.operator_class_name.should == 'Project'
+      method_details.operator_class.should == Project
+    end
+
+
+    #LongAndComplexTableLinkedToVersion.version = version.id
+
+    [:version, "Version", "verSION"].each do |format|
+      method_details = MethodMapper.find_method_detail( LongAndComplexTableLinkedToVersion, format )
+
+      method_details.operator_type.should == :belongs_to
+
+      method_details.operator_class_name.should == 'Version'
+      method_details.operator_class.should == Version
+    end
+  end
+
+   it "should populate required Class for has_one operator method details" do
+
+    MethodMapper.find_operators( Version )
+
+    # version.long_and_complex_table_linked_to_version = LongAndComplexTableLinkedToVersion.create()
+
+    [:long_and_complex_table_linked_to_version, 'LongAndComplexTableLinkedToVersion', "Long And Complex_Table_Linked To  Version", "Long_And_Complex_Table_Linked_To_Version"].each do |format|
+      method_details = MethodMapper.find_method_detail( Version, format )
+
+      method_details.should_not be_nil
+
+      method_details.operator.should == 'long_and_complex_table_linked_to_version'
+      
+      method_details.operator_type.should == :has_one
+
+      method_details.operator_class_name.should == 'LongAndComplexTableLinkedToVersion'
+      method_details.operator_class.should == LongAndComplexTableLinkedToVersion
+    end
+  end
+
+
+  it "should find has_many operator for method details" do
+
+    [:milestones, "Mile Stones", 'mileSTONES', 'MileStones'].each do |format|
+
+      method_details = MethodMapper.find_method_detail( Project, format )
+
+      method_details.class.should == MethodDetail
+      
+      result = 'milestones'
+      method_details.operator.should == result
+      method_details.operator_for(:has_many).should == result
+
+      method_details.operator_for(:belongs_to).should be_nil
+      method_details.operator_for(:assignments).should be_nil
+    end
+
+  end
+
+ 
   it "should return nil when non existent column name" do
     ["On sale", 'on_sale'].each do |format|
       detail = MethodMapper.find_method_detail( @klazz, format )

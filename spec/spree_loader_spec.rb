@@ -1,7 +1,5 @@
 require File.dirname(__FILE__) + '/spec_helper'
 
-require 'spree'
-
 require 'spree_helper'
 
 describe 'SpreeLoader' do
@@ -66,13 +64,11 @@ describe 'SpreeLoader' do
 
   it "should find method details correctly for different forms of a column name" do
 
-
     ["Count On hand", 'count_on_hand', "Count OnHand", "COUNT ONHand"].each do |format|
 
       method_details = MethodMapper.find_method_detail( @klazz, format )
 
       method_details.operator.should == 'count_on_hand'
-      method_details.assignment.should == 'count_on_hand'
       method_details.operator_for(:assignment).should == 'count_on_hand'
 
       method_details.operator_for(:belongs_to).should be_nil

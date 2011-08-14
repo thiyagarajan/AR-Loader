@@ -13,6 +13,8 @@ doc/plugins
 doc/*.dot
 coverage/*
 db/*.sqlite3
+logs
+logs/**
 nbproject
 pkg
 Thumbs.db

@@ -24,10 +24,17 @@ module Spree
   end
 
   def self.load
-    require 'rails'
+    gem 'rails'
+    
     gem 'spree'
+    require 'spree'
+
     gem 'paperclip'
     gem 'nested_set'
+
+    require 'nested_set'
+    require 'paperclip'
+    require 'acts_as_list'
 
     CollectiveIdea::Acts::NestedSet::Railtie.extend_active_record
     ActiveRecord::Base.send(:include, Paperclip::Glue)
@@ -60,11 +67,12 @@ module Spree
   end
 
   def self.load_models
+    puts 'load from', root
     Dir[root + '/app/models/**/*.rb'].each {|r|
       begin
         require r if File.file?(r)
       rescue => e
-        #puts 'failed to load', r, e.inspect
+        puts 'failed to load', r, e.inspect
       end
     }
   end

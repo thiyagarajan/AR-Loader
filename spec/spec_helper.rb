@@ -1,4 +1,4 @@
-require 'active_support'
+#require 'active_support'
 require 'active_record'
 require 'erb'
 
@@ -19,6 +19,8 @@ require File.dirname(__FILE__) + '/../lib/ar_loader'
 
 def db_connect( env = 'test_file')
 
+  require 'active_record'
+
   # Some active record stuff seems to rely on the RAILS_ENV being set ?
 
   ENV['RAILS_ENV'] = env
@@ -37,11 +39,13 @@ def db_connect( env = 'test_file')
   ActiveRecord::Base.establish_connection( db )
 
   require 'logger'
-  ActiveRecord::Base.logger = Logger.new(STDOUT)
+  logdir = File.dirname(__FILE__) + '/logs'
+  FileUtils.mkdir_p(logdir) unless File.exists?(logdir)
+  ActiveRecord::Base.logger = Logger.new(logdir + '/test.log')
 
   #puts "Connected to DB - #{ActiveRecord::Base.connection.inspect}"
 
-  require File.dirname(__FILE__) + '/fixtures/models'
+  require File.dirname(__FILE__) + '/models'   # load our test model definitions
 
   # handle migration changes or reset of test DB
   migrate_up
@@ -49,7 +53,7 @@ def db_connect( env = 'test_file')
 end
 
 def db_clear
-  [Project, Milestone, Category, Version, Release].each {|x| x.delete_all}
+  [Project, Milestone, Category, Version, LoaderRelease].each {|x| x.delete_all}
 end
 
 def load_in_memory
