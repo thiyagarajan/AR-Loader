@@ -47,7 +47,7 @@ module ArLoader
 
     loader_libs = %w{ lib  }
 
-    # Base search paths - these will be searched recursively and any xxx.rake files autoimported
+    # Base search paths - these will be searched recursively
     loader_paths = []
 
     loader_libs.each {|l| loader_paths << File.join(root_path(), l) }
@@ -63,9 +63,9 @@ module ArLoader
       end
     end
 
-    require__libs = %w{ loaders engine }
+    require_libs = %w{ ar_loader loaders helpers }
 
-    require__libs.each do |base|
+    require_libs.each do |base|
       Dir[File.join('lib', base, '*.rb')].each do |rb|
           unless File.directory? rb
             require rb
@@ -81,7 +81,7 @@ module ArLoader
     base = File.join(root_path, 'tasks', '**')
     Dir["#{base}/*.rake"].sort.each { |ext| load ext }
   end
-  
+
 end
 
-loaded ||= ArLoader::require_libraries
+ArLoader::require_libraries

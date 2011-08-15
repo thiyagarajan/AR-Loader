@@ -72,7 +72,7 @@ module Spree
       begin
         require r if File.file?(r)
       rescue => e
-        puts 'failed to load', r, e.inspect
+        #puts 'failed to load', r, e.inspect
       end
     }
   end

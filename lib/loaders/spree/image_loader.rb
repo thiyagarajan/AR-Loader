@@ -5,38 +5,42 @@
 #
 require 'loader_base'
 
-class ImageLoader < LoaderBase
+module ARLoader
 
-  def initialize(klass = Image, image = nil)
-    super( klass, image )
-    raise "Failed to create Image for loading" unless @load_object
-  end
+  class ImageLoader < LoaderBase
 
-  # Note the Spree Image model sets default storage path to
-  # => :path => ":rails_root/public/assets/products/:id/:style/:basename.:extension"
-
-  def process( image_path, record = nil)
-
-    unless File.exists?(image_path)
-      puts "ERROR : Invalid Path"
-      return
+    def initialize(image = nil)
+      super( Image, image )
+      raise "Failed to create Image for loading" unless @load_object
     end
 
-    alt = (record and record.respond_to? :name) ? record.name : ""
+    # Note the Spree Image model sets default storage path to
+    # => :path => ":rails_root/public/assets/products/:id/:style/:basename.:extension"
 
-    @load_object.alt = alt
+    def process( image_path, record = nil)
 
-    begin
-      @load_object.attachment = File.new(image_path, "r")
-    rescue => e
-      puts e.inspect
-      puts "ERROR : Failed to read image #{image_path}"
-      return
+      unless File.exists?(image_path)
+        puts "ERROR : Invalid Path"
+        return
+      end
+
+      alt = (record and record.respond_to? :name) ? record.name : ""
+
+      @load_object.alt = alt
+
+      begin
+        @load_object.attachment = File.new(image_path, "r")
+      rescue => e
+        puts e.inspect
+        puts "ERROR : Failed to read image #{image_path}"
+        return
+      end
+
+      @load_object.attachment.reprocess!
+      @load_object.viewable = record if record
+
+      puts @load_object.save ? "Success: Uploaded Image: #{@load_object.inspect}" : "ERROR : Problem saving to DB Image: #{@load_object}"
     end
-
-    @load_object.attachment.reprocess!
-    @load_object.viewable = record if record
-
-    puts @load_object.save ? "Success: Uploaded Image: #{@load_object.inspect}" : "ERROR : Problem saving to DB Image: #{@load_object}"
   end
+
 end

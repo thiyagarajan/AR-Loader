@@ -10,108 +10,41 @@
 # e.g.  => jruby -S rake ar_loader:spree:products input=vendor/extensions/autotelik/fixtures/SiteSpreadsheetInfo.xls
 #       => jruby -S rake ar_loader:spree:products input=C:\MyProducts.xls verbose=true
 #
+require 'ar_loader'
+require 'product_loader'
+require 'csv_loader'
+
 namespace :ar_loader do
 
   namespace :spree do
 
-    desc "Populate Spree db with Product/Varient data from .xls (Excel) file"
-    task :products, :input, :verbose, :sku_prefix, :needs => :environment do |t, args|
+    desc "Populate Spree db with Product/Variant data from .xls (Excel) file"
+    task :products, [:input, :verbose, :sku_prefix] => :environment do |t, args|
 
-      raise "USAGE: jruby -S rake product_load input=excel_file.xls" unless args[:input]
-      raise "ERROR: Could not find file #{args[:input]}" unless File.exists?(args[:input])
+      input = ENV['input']
+
+      raise "USAGE: jruby -S rake  ar_loader:spree:products input=excel_file.xls" unless input
+      raise "ERROR: Could not find file #{args[:input]}" unless File.exists?(input)
 
       require 'product_loader'
-      require 'method_mapper_excel'
-
-      @method_mapper = MethodMapperExcel.new(args[:input], Product)
-
-      @excel = @method_mapper.excel
-
-      if(args[:verbose])
-        puts "Loading from Excel file: #{args[:input]}"
-        puts "Processing #{@excel.num_rows} rows"
-      end
-
-      # REQUIRED 'set' methods on Product i.e will not validate/save without these
-      required_methods = ['sku', 'name', 'price']
-
-
-      missing = @method_mapper.check_mandatory( required_methods )
-
-      puts ""
-      if(missing.empty?) 
-        missing.each { |e| puts "ERROR: Mandatory column missing - need a '#{x}' column" }
-        raise "Bad File Description - Mandatory columns missing  - please fix and retry."
-      end
 
       # COLUMNS WITH DEFAULTS - TODO create YAML configuration file to drive defaults etc
-  
-      MethodDetail.set_default_value('available_on', Time.now.to_s(:db) )
-      MethodDetail.set_default_value('cost_price', 0.0 )
 
-      MethodDetail.set_prefix('sku', args[:sku_prefix] ) if args[:sku_prefix]
+      ARLoader::MethodDetail.set_default_value('available_on', Time.now.to_s(:db) )
+      ARLoader::MethodDetail.set_default_value('cost_price', 0.0 )
 
-      # Process spreadsheet and create Products
-      method_names = @method_mapper.method_names
+      ARLoader::MethodDetail.set_prefix('sku', args[:sku_prefix] ) if args[:sku_prefix]
 
-      sku_index = method_names.index('sku')
+      if(File.extname(input) == '.xls' and Guards::jruby?)
+        loader = ARLoader::ProductLoader.new
+      else
+        loader = ARLoader::CSVLoader.new
+      end
 
-      Product.transaction do
-        @products =  []
+      puts "Loading from file: #{input}"
 
-        (1..@excel.num_rows).collect do |row|
-
-          product_data_row = @excel.sheet.getRow(row)
-          break if product_data_row.nil?
-
-          # Excel num_rows seems to return all 'visible' rows so,
-          # we have to manually detect when actual data ends and all the empty rows start
-          contains_data = required_methods.find { |mthd| ! product_data_row.getCell(method_names.index(mthd)).to_s.empty? }
-          break unless contains_data
- 
-          @assoc_classes = {}
-
-          loader = ProductLoader.new()
-
-          # TODO - Smart sorting of column processing order ....
-          # Does not currently ensure mandatory columns (for valid?) processed first but Product needs saving
-          # before associations can be processed so user should ensure SKU, name, price columns are among first columns
-
-          @method_mapper.methods.each_with_index do |method_map, col|
-            product_data_row.getCell(col).setCellType(JExcelFile::HSSFCell::CELL_TYPE_STRING) if(col == sku_index)
-            loader.process(method_map, @excel.value(product_data_row, col))
-            begin
-              prod = loader.load_object
-              if( prod.valid? && prod.new_record? )
-                prod.save
-              end
-            rescue => e
-              puts "ERROR: Product save #{e.inspect}"
-              raise "Error processing Product"
-            end
-          end
-
-          product = loader.load_object
-
-          product.available_on ||= Time.now.to_s(:db)
-
-          # TODO - handle when it's not valid ?
-          # Process rest and dump out an exception list of Products
-          #unless(product.valid?)
-          #end
-
-          puts "SAVING ROW #{row} : #{product.inspect}" if args[:verbose]
-
-          unless(product.save)
-            puts product.errors.inspect
-            puts product.errors.full_messages.inspect
-            raise "Error Saving Product: #{product.sku} :#{product.name}"
-          else
-            @products << product
-          end
-        end
-      end   # TRANSACTION
-
+      loader.load(input, :mandatory => ['sku', 'name', 'price'] )
     end
-  end
+  end 
+
 end

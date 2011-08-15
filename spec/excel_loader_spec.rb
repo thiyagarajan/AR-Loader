@@ -10,6 +10,8 @@ require File.dirname(__FILE__) + '/spec_helper'
 require 'erb'
 require 'excel_loader'
 
+include ARLoader
+
 describe 'Excel Loader' do
 
   before(:all) do
@@ -29,6 +31,7 @@ describe 'Excel Loader' do
     %w{category_001 category_002 category_003}.each do |cat|
       @assoc_klazz.find_or_create_by_reference(cat)
     end
+
 
     MethodMapper.clear
     MethodMapper.find_operators( @klazz )
@@ -99,6 +102,13 @@ describe 'Excel Loader' do
   it "should not process badly defined excel spreedsheet" do
     loader = ExcelLoader.new(Project)
     expect {loader.load( $fixture_path + '/BadAssociationName.xls')}.to raise_error(MappingDefinitionError)
+  end
+
+  #@pending
+  it "should raise an error when mandatory columns missing" do
+    #loader = ExcelLoader.new(Project)
+    #required = [:x, :. :z]
+    #expect {loader.load( $fixture_path + '/BadAssociationName.xls', { :mandatopry:=> required}) }.to raise_error(????????)
   end
 
 end

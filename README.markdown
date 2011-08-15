@@ -35,7 +35,11 @@ Add gem 'ar_loader' to your Gemfile/bundle, or install the latest gem as usual :
 
 To use :
 
+    gem 'ar_loader'
     require 'ar_loader'
+
+    ArLoader::load_tasks
+
 
 To pull the tasks in, add call in your Rakefile :
 
@@ -81,12 +85,15 @@ To use in a mixed Ruby setup, you can use a guard something like :
   Can handle 'belongs_to, 'has_many' and 'has_one' associations, including assignment of multiple objects
   via either multiple columns, or via specially delimited entry in a single (column). See Details section.
 
+
+- *Rake Tasks*
+
+  High level Rake tasks are provided, only required to supply model class, and file location :
+
+    jruby -S rake ar_loader:excel model=MusicTrack input=MyTrackListing.xls
+
+
 - *Spree Rake Tasks*
-
-  High level Rake tasks are provided  for example
-
-    jruby -S rake ar_loader:excel_load model=MusicTrack input=MyTrackListing.xls
-
 
   Specific Rake tasks are also provided for Spree loading - currently supports Product with associations,
   and Image loading.
@@ -165,16 +172,44 @@ A report is generated in the current working directory detailing any Images in t
 
 ### Associations
 
-A single association column can contain multiple name/value sets in default form :
+To perform a lookup for an associated model, the primary column(s) must be supplied, along with required select values for those columns.
 
-    Name1:value1, value2|Name2:value1, value2, value3|Name3:value1, value2 etc
+A single association column can contain multiple name/value sets, in string form :
 
-So for example a Column for an 'Option Types' association on a Product,
- could contain 2 options with a number of values each :
+  column:lookup_key_1, lookup_key_2,...
 
-'Option Types'
+So if our Project model has many Categories, we can supply a Category list, which is keyed on the column 'reference' with :
+
+  |Categories|
+  reference:category_001,category_002
+
+During loading, a call to find_all_by_reference will be made, picking up the 2 categories with matching references,
+ and our Project model will contain those two i.e project.categories = [category_002,category_003]
+
+## Spree Suppprt
+
+### OptionTypes & Variants
+
+When loaded with the Spree specific tasks, spree specific over rides are supported, such as direct s
+support for OptionTypes with values
+
+Any 'Option Types' columns can contain the OptionType to associate with the Product, plus a selection of
+appropriate OptionValues to go with that Type. 
+
+For example, in a single column/row we could supply 2 OptionTypes (named, size & colour), with a selection values
+(such as small, medium etc)
+
+    'Option Types'
     size:small,medium,large|colour:red,white
-    size:small|colour:blue,red,white
+
+If no such OptionType exists, e.g size, then a new one is created with the supplied name.
+
+Next the OptionValues are also parsed, again if no such OptionValue exists, e.g small, then a new one is created with the supplied name.
+
+Lastly a Variant is created on each OptionValue, with price and availaable dates being copied from Master.
+Currently a unique SKU is created by adding an index to the master's sku.
+
+TODO - Enable a hash of attributes to be supplied in association columns to enable more control over creation of associated objects.
 
 ### Properties
 
@@ -196,7 +231,7 @@ Example - Display  values :
 
 ## TODO
 
-  - Make more generic, so have smart switching to Ruby and directly support csv,
+  - Directly support csv,
     when JRuby and/or Excel not available.
 
   - Smart sorting of column processing order ....

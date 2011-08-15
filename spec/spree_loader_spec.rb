@@ -2,6 +2,8 @@ require File.dirname(__FILE__) + '/spec_helper'
 
 require 'spree_helper'
 
+include ARLoader
+  
 describe 'SpreeLoader' do
 
   before(:all) do
@@ -176,6 +178,47 @@ describe 'SpreeLoader' do
     method_detail.assign( klazz_object, [ProductProperty.new(:property => @prop2), ProductProperty.new(:property => @prop3)])
     klazz_object.product_properties.size.should == 6
 
+  end
+
+  it "should process a simple .xls spreadsheet" do
+
+    Zone.delete_all
+
+    loader = ExcelLoader.new(Zone)
+
+    count = Zone.count
+    loader.load( $fixture_path + '/SpreeZoneExample.xls')
+
+    loader.loaded_count.should == (Zone.count - count)
+  end
+
+  it "should process a simple csv file", :focus => false do
+
+    Zone.delete_all
+
+    loader = CsvLoader.new(Zone)
+
+    count = Zone.count
+    loader.load( $fixture_path + '/SpreeZoneExample.csv')
+
+    loader.loaded_count.should == (Zone.count - count)
+  end
+
+  it "should load Products via specific Spree loader", :focus => true do
+
+    require 'product_loader'
+
+    Product.delete_all; Variant.delete_all; Taxon.delete_all
+    
+    count = Product.count
+
+    loader = ARLoader::ProductLoader.new
+
+    # REQUIRED 'set' methods on Product i.e will not validate/save without these
+
+    loader.load($fixture_path + '/SpreeProducts.xls', :mandatory => ['sku', 'name', 'price'] )
+
+    loader.loaded_count.should == (Product.count - count)
   end
 
 end

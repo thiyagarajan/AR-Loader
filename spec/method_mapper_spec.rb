@@ -65,6 +65,9 @@ describe 'Method Mapping' do
 
       method_details.operator.should == 'value_as_string'
       method_details.operator_for(:assignment).should == 'value_as_string'
+      
+      method_details.operator?('value_as_string').should be_true
+      method_details.operator?('blah_as_string').should be_false
 
       method_details.operator_for(:belongs_to).should be_nil
       method_details.operator_for(:has_many).should be_nil
