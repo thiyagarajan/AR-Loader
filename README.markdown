@@ -181,6 +181,7 @@ A single association column can contain multiple name/value sets, in string form
 So if our Project model has many Categories, we can supply a Category list, which is keyed on the column 'reference' with :
 
   |Categories|
+
   reference:category_001,category_002
 
 During loading, a call to find_all_by_reference will be made, picking up the 2 categories with matching references,
