@@ -71,6 +71,9 @@ module ARLoader
 
     # Create picture of the operators for assignment available on an AR model,
     # including via associations (which provide both << and = )
+    # Optoipns:
+    # :reload => clear caches and reperform  lookup
+    # :instance_methods => if true include instance method type assignment operators as well as model's pure columns
     #
     def self.find_operators(klass, options = {} )
 
@@ -98,7 +101,8 @@ module ARLoader
       # Find the model's column associations which can be populated via = value
       if( options[:reload] || @@assignments[klass].nil? )
 
-        @@assignments[klass] = (klass.column_names + klass.instance_methods.grep(/=/).map{|i| i.gsub(/=/, '')})
+        @@assignments[klass] = klass.column_names
+        @@assignments[klass] += klass.instance_methods.grep(/=/).map{|i| i.gsub(/=/, '')} if(options[:instance_methods] == true)
         @@assignments[klass] -= @@has_many[klass] if(@@has_many[klass])
         @@assignments[klass] -= @@belongs_to[klass] if(@@belongs_to[klass])
         @@assignments[klass] -= self.has_one[klass] if(self.has_one[klass])

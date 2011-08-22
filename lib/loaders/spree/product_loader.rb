@@ -11,7 +11,7 @@ require 'excel_loader'
 
 module ARLoader
 
-  class ProductLoader < ExcelLoader
+  class ProductLoader < LoaderBase
     
     def initialize(product = nil)
       super( Product, product )

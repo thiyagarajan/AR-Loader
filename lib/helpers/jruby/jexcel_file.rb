@@ -55,12 +55,14 @@ if(Guards::jruby?)
 
       sheet(0)  # also sets @current_sheet
     end
-  
-    def create(sheet_name)
+
+    # TOFIX - how do we know which sheet we are creating so we can set index @current_sheet
+    def create_sheet(sheet_name)
       @book = HSSFWorkbook.new()
       @sheet = @book.createSheet(sheet_name.gsub(" ", ''))
       date_style = @book.createCellStyle()
       date_style.setDataFormat(HSSFDataFormat.getBuiltinFormat("m/d/yy h:mm"))
+      @sheet
     end
 
     # Return the current or specified HSSFSheet
@@ -81,7 +83,7 @@ if(Guards::jruby?)
     end
 
 
-    # Create new row, bring index in line with POI usage (our 1 is their 0)
+    # Create new row
     def create_row(index)
       @row = @sheet.createRow(index)
       @row
@@ -126,62 +128,4 @@ if(Guards::jruby?)
  
   end
   
-  module ExcelHelper
-    require 'java'
-
-    include_class 'org.apache.poi.poifs.filesystem.POIFSFileSystem'
-    include_class 'org.apache.poi.hssf.usermodel.HSSFCell'
-    include_class 'org.apache.poi.hssf.usermodel.HSSFWorkbook'
-    include_class 'org.apache.poi.hssf.usermodel.HSSFCellStyle'
-    include_class 'org.apache.poi.hssf.usermodel.HSSFDataFormat'
-    include_class 'java.io.ByteArrayOutputStream'
-    include_class 'java.util.Date'
-
-    # ActiveRecord Helper - Export model data to XLS file format
-    #
-    def to_xls(items=[])
-
-      @excel = ExcelFile.new(items[0].class.name)
-    
-      @excel.create_row(0)
-  
-      sheet = @excel.sheet
-
-      # header row
-      if !items.empty?
-        row = sheet.createRow(0)
-        cell_index = 0
-        items[0].class.columns.each do |column|
-          row.createCell(cell_index).setCellValue(column.name)
-          cell_index += 1
-        end
-      end
-
-      # value rows
-      row_index = 1
-      items.each do |item|
-        row = sheet.createRow(row_index);
-
-        cell_index = 0
-        item.class.columns.each do |column|
-          cell = row.createCell(cell_index)
-          if column.sql_type =~ /date/ then
-            millis = item.send(column.name).to_f * 1000
-            cell.setCellValue(Date.new(millis))
-            cell.setCellStyle(dateStyle);
-          elsif column.sql_type =~ /int/ then
-            cell.setCellValue(item.send(column.name).to_i)
-          else
-            value = item.send(column.name)
-            cell.setCellValue(item.send(column.name)) unless value.nil?
-          end
-          cell_index += 1
-        end
-        row_index += 1
-      end
-      @excel.to_s
-    end
-  end
-else
-  raise "Bad Platform - Sorry can only access Excel files via JRuby"
 end
